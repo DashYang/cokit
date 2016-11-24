@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.servlet.http.HttpSession;
@@ -14,6 +15,9 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.apache.log4j.Logger;
+import org.cokit.session.SessionHandler;
+import org.cokit.session.SessionPool;
+import org.coweb.SessionManager;
 
 import net.sf.json.JSONObject;
 
@@ -22,11 +26,11 @@ import net.sf.json.JSONObject;
  */
 @ServerEndpoint(value = "/CoKitServer")
 public class WebSocketServer {
-	private static final Set<Session> onlineUsers = new CopyOnWriteArraySet<Session>();
-	private String nickname;
-	private Session session;
-	private HttpSession httpSession;
-	private Logger logger = Logger.getLogger(this.getClass());
+	private SessionPool sessionPool = null;
+	private static final Logger logger = Logger.getLogger(WebSocketServer.class.getName());
+	
+	//map from session.id to cokey
+	private static final ConcurrentHashMap<String, String> registerTable = new ConcurrentHashMap<String, String>();
 	
 	/**
 	 * @OnOpen allows us to intercept the creation of a new session. The session
@@ -55,7 +59,11 @@ public class WebSocketServer {
 		
 		//begin to extract value from JSON Message
 		String cokey = messageJSON.getString("cokey");
+		this.sessionPool = SessionPool.newInstance();
 		
+		if(sessionPool.isExist(cokey) == false) {
+			SessionHandler sessionhandler = new SessionHandler(cokey);
+		}
 		
 		
 	}
@@ -67,7 +75,7 @@ public class WebSocketServer {
 	 */
 	@OnClose
 	public void onClose(Session session) {
-		onlineUsers.remove(session);
+		
 		logger.info("Session " + session.getId() + " has ended");
 	}
 

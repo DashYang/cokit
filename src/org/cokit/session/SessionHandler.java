@@ -3,6 +3,7 @@ package org.cokit.session;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.websocket.CloseReason;
@@ -10,24 +11,25 @@ import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.Session;
 
 import org.apache.log4j.Logger;
-import org.cokit.data.SessionId;
 
-public class SessionManager {
+public class SessionHandler {
 	private String cokey = "";
-
-	private static final Set<Session> onlineUsers = new CopyOnWriteArraySet<Session>();
 	
-	private Logger logger = Logger.getLogger(this.getClass());
+	//map from siteId to session
+	private static final ConcurrentHashMap<String, Session> onlineUsers = new ConcurrentHashMap<String, Session>();
 	
-	public SessionManager(String cokey) {
+	private static final Logger logger = Logger.getLogger(SessionHandler.class.getName());
+	
+	public SessionHandler(String cokey) {
 		this.setCokey(cokey);
+		
 	}
 	/**
 	 * add a a session to the session manager
 	 * @param session 
 	 */
-	public synchronized void addSession(Session session) {
-		onlineUsers.add(session);
+	public void addSession(String siteId, Session session) {
+		onlineUsers.put(siteId, session);
 	}
 	
 	/**
@@ -37,28 +39,45 @@ public class SessionManager {
 	 */
 	public synchronized void broadcastToAll(String message) {
 		logger.info("broadcast message" + message);
-		Set<Session> abnormalSessions = new HashSet<Session>();
-		for (Session user : onlineUsers) {
+		Set<String> abnormalSessions = new HashSet<String>();
+		for (String siteId : onlineUsers.keySet()) {
 			try {
+				Session user = onlineUsers.get(siteId);
 				user.getBasicRemote().sendText(message);
 			} catch (IOException e) {
-				logger.info(user.getId() + "encounter a problem, terminte");
-				abnormalSessions.add(user);
+				logger.info(siteId + "encounter a problem, terminte");
+				abnormalSessions.add(siteId);
 				e.printStackTrace();
 			}
 		}
 		
 		//terminiate abnormal session, it better use 'while'
 		CloseReason cr = new CloseReason(CloseCodes.CANNOT_ACCEPT, "try it later");
-		for(Session user : abnormalSessions) {
+		for(String siteId : abnormalSessions) {
 			try {
+				Session user = onlineUsers.get(siteId);
 				user.close(cr);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			onlineUsers.remove(siteId);
 		}
 	}
+	
+	public synchronized void closeAllConnections() {
+		//terminiate abnormal session, it better use 'while'
+		CloseReason cr = new CloseReason(CloseCodes.GOING_AWAY, "done!");
+		for (String siteId : onlineUsers.keySet()) {
+			try {
+				Session user = onlineUsers.get(siteId);
+				user.close(cr);
+			} catch (IOException e) {
+			}
+		}
+		onlineUsers.clear();
+	}
+	
 	public String getCokey() {
 		return cokey;
 	}
