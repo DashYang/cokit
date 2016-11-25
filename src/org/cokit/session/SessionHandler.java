@@ -14,28 +14,33 @@ import org.apache.log4j.Logger;
 
 public class SessionHandler {
 	private String cokey = "";
-	
-	//map from siteId to session
+
+	// map from siteId to session
 	private static final ConcurrentHashMap<String, Session> onlineUsers = new ConcurrentHashMap<String, Session>();
-	
-	private static final Logger logger = Logger.getLogger(SessionHandler.class.getName());
-	
+
+	private static final Logger logger = Logger.getLogger(SessionHandler.class
+			.getName());
+
 	public SessionHandler(String cokey) {
 		this.setCokey(cokey);
-		
+
 	}
+
 	/**
 	 * add a a session to the session manager
-	 * @param session 
+	 * 
+	 * @param session
 	 */
 	public void addSession(String siteId, Session session) {
 		onlineUsers.put(siteId, session);
 	}
-	
+
 	/**
-	 * broad operation to all users who share the same sessionId
-	 * it's better to use a message queue
-	 * @param message return to client site
+	 * broad operation to all users who share the same sessionId it's better to
+	 * use a message queue
+	 * 
+	 * @param message
+	 *            return to client site
 	 */
 	public synchronized void broadcastToAll(String message) {
 		logger.info("broadcast message" + message);
@@ -50,10 +55,11 @@ public class SessionHandler {
 				e.printStackTrace();
 			}
 		}
-		
-		//terminiate abnormal session, it better use 'while'
-		CloseReason cr = new CloseReason(CloseCodes.CANNOT_ACCEPT, "try it later");
-		for(String siteId : abnormalSessions) {
+
+		// terminiate abnormal session, it better use 'while'
+		CloseReason cr = new CloseReason(CloseCodes.CANNOT_ACCEPT,
+				"try it later");
+		for (String siteId : abnormalSessions) {
 			try {
 				Session user = onlineUsers.get(siteId);
 				user.close(cr);
@@ -64,9 +70,9 @@ public class SessionHandler {
 			onlineUsers.remove(siteId);
 		}
 	}
-	
+
 	public synchronized void closeAllConnections() {
-		//terminiate abnormal session, it better use 'while'
+		// terminiate abnormal session, it better use 'while'
 		CloseReason cr = new CloseReason(CloseCodes.GOING_AWAY, "done!");
 		for (String siteId : onlineUsers.keySet()) {
 			try {
@@ -77,10 +83,25 @@ public class SessionHandler {
 		}
 		onlineUsers.clear();
 	}
-	
+
+	public void closeConnection(String siteId) {
+		if (onlineUsers.contains(siteId)) {
+			CloseReason cr = new CloseReason(CloseCodes.GOING_AWAY, "done!");
+			Session user = onlineUsers.get(siteId);
+			try {
+				user.close(cr);
+				onlineUsers.remove(siteId);
+			} catch (IOException e) {
+				logger.info("close connection " + siteId + " failed");
+				e.printStackTrace();
+			}
+		}
+	}
+
 	public String getCokey() {
 		return cokey;
 	}
+
 	public void setCokey(String cokey) {
 		this.cokey = cokey;
 	}

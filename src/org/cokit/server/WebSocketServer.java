@@ -17,7 +17,6 @@ import javax.websocket.server.ServerEndpoint;
 import org.apache.log4j.Logger;
 import org.cokit.session.SessionHandler;
 import org.cokit.session.SessionPool;
-import org.coweb.SessionManager;
 
 import net.sf.json.JSONObject;
 
@@ -27,11 +26,12 @@ import net.sf.json.JSONObject;
 @ServerEndpoint(value = "/CoKitServer")
 public class WebSocketServer {
 	private SessionPool sessionPool = null;
-	private static final Logger logger = Logger.getLogger(WebSocketServer.class.getName());
-	
-	//map from session.id to cokey
+	private static final Logger logger = Logger.getLogger(WebSocketServer.class
+			.getName());
+
+	// map from session.id to cokey
 	private static final ConcurrentHashMap<String, String> registerTable = new ConcurrentHashMap<String, String>();
-	
+
 	/**
 	 * @OnOpen allows us to intercept the creation of a new session. The session
 	 *         class allows us to send data to the user. In the method onOpen,
@@ -56,16 +56,43 @@ public class WebSocketServer {
 	public void onMessage(String message, Session session) {
 		logger.info("Message from " + session.getId() + ": " + message);
 		JSONObject messageJSON = JSONObject.fromObject(message);
-		
-		//begin to extract value from JSON Message
+
+		// extract identified information from JSON Message
+		String sessionId = session.getId();
 		String cokey = messageJSON.getString("cokey");
+		String siteId = messageJSON.getString("siteId");
+
+		// create sessionHandler for cokey
 		this.sessionPool = SessionPool.newInstance();
-		
-		if(sessionPool.isExist(cokey) == false) {
-			SessionHandler sessionhandler = new SessionHandler(cokey);
+		sessionPool.addSessionHandler(cokey);
+
+		// old session
+		if (registerTable.contains(sessionId)) {
+			// session shifts
+			if (!cokey.equals(registerTable.get(sessionId).toString())) {
+				// close past connection
+				SessionHandler pastSessionhandler = sessionPool
+						.getSessionHandler(registerTable.get(sessionId));
+				pastSessionhandler.closeConnection(siteId);
+
+				// add new connection
+				SessionHandler newSessionhandler = sessionPool
+						.getSessionHandler(cokey);
+				newSessionhandler.addSession(siteId, session);
+
+			}
+		} else { //new session
+			// add new connection
+			SessionHandler newSessionhandler = sessionPool
+					.getSessionHandler(cokey);
+			newSessionhandler.addSession(siteId, session);
 		}
+		//update register table
+		registerTable.put(sessionId, cokey);
 		
 		
+		
+
 	}
 
 	/**
@@ -75,7 +102,7 @@ public class WebSocketServer {
 	 */
 	@OnClose
 	public void onClose(Session session) {
-		
+
 		logger.info("Session " + session.getId() + " has ended");
 	}
 
