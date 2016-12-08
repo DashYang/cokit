@@ -60,7 +60,6 @@ public class WebSocketServer {
 		// extract identified information from JSON Message
 		String sessionId = session.getId();
 		String cokey = messageJSON.getString("cokey");
-		String siteId = messageJSON.getString("siteId");
 
 		// create sessionHandler for cokey
 		this.sessionPool = SessionPool.newInstance();
@@ -70,29 +69,41 @@ public class WebSocketServer {
 		if (registerTable.contains(sessionId)) {
 			// session shifts
 			if (!cokey.equals(registerTable.get(sessionId).toString())) {
-				// close past connection
+				String oldCoKey = registerTable.get(sessionId);
+				// remove past connection
 				SessionHandler pastSessionhandler = sessionPool
-						.getSessionHandler(registerTable.get(sessionId));
-				pastSessionhandler.closeConnection(siteId);
-
+						.getSessionHandler(oldCoKey);
+				pastSessionhandler.removeConnection(sessionId);
+				
 				// add new connection
 				SessionHandler newSessionhandler = sessionPool
 						.getSessionHandler(cokey);
-				newSessionhandler.addSession(siteId, session);
-
+				newSessionhandler.addSession(sessionId, session);
+				
+				logger.info("shift from  " + oldCoKey + " to " + cokey);
 			}
 		} else { //new session
-			// add new connection
+			// add new connection 
 			SessionHandler newSessionhandler = sessionPool
 					.getSessionHandler(cokey);
-			newSessionhandler.addSession(siteId, session);
+			newSessionhandler.addSession(sessionId , session);
 		}
 		//update register table
 		registerTable.put(sessionId, cokey);
 		
+		SessionHandler sessionHandler = sessionPool.getSessionHandler(cokey);
 		
+		//server completer timestamp
+		int globalState = sessionHandler.assignHandlerGlobalState();
+		String globalClock = sessionHandler.getGlobalClock();
+		JSONObject timestampJSON = messageJSON.getJSONObject("timestamp");
+		timestampJSON.element("globalState", globalState);
+		timestampJSON.element("globalClock", globalClock);
+		messageJSON.element("timestamp", timestampJSON);
+		//broadcast new message
+		sessionHandler.broadcastToAll(messageJSON.toString());
 		
-
+		logger.info("Message from " + session.getId() + ": " + message);
 	}
 
 	/**
