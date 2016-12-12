@@ -1,12 +1,10 @@
-//to denote who I am
-var me;
 /**
  * 
  * the basic data structure to support lock-free consistency maintenance
  * Node: location info
  * Timestamp: version info
  */
-function Timestamp(srn,opcnt , user , lastUpdateSRN) {
+function Timestamp(srn, opcnt , user , lastUpdateSRN) {
 	this.srn = srn;
 	this.opcnt = opcnt;
 	this.user = user;
@@ -15,6 +13,9 @@ function Timestamp(srn,opcnt , user , lastUpdateSRN) {
 	this.localClock = new Date().getTime();
 	this.globalClock;
 	
+	this.createIdentifier = function() {
+		return this.user+this.opcnt;
+	}
 	//torder(this) < torder(ts)
 	this.torder = function(ts) {
 		if(this.user == ts.user)
@@ -73,8 +74,13 @@ function Timestamp(srn,opcnt , user , lastUpdateSRN) {
 	};
 }
 
-// very beginning timestamp
-initTimestamp = Timestamp (-1,-1, me, -1);
+Timestamp.createZeroTimestamp = function(user) {
+	return Timestamp(-1,-1, user, -1); 
+}
+
+Timestamp.createInfiniteTimestamp = function(user) {
+	return Timestamp(0x3fffffff,0x3fffffff,username,0x3fffffff);
+}
 
 // ts1 -> ts2
 function isHappenedBefore(ts1, ts2) {
