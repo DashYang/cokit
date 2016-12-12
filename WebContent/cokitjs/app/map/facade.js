@@ -9,8 +9,14 @@ function updatePOItabs() {
 	var currNode = POINodeMap.getHeadNode();
 	var tailNode = POINodeMap.getTailNode();
 	var preId = currNode.identifier;
-	currNode = POINodeMap.get(currNode.nextId);
+	currNode = POINodeMap.find(currNode.nextId);
+	
+	var listHtml = "";
 	while (currNode != tailNode) {
+		if(currNode.isEffective == false) {
+			currNode = POINodeMap.find(currNode.nextId);
+			continue;
+		}
 		var tarId = currNode.identifier;
 		var insertButton = "<button id='i"
 				+ preId
@@ -22,11 +28,11 @@ function updatePOItabs() {
 				+ "d" + "</button>";
 		listHtml += "<li id='poi" + tarId
 				+ "'class='list-group-item list-group-item-info'>"
-				+ currNode.data.title + " " + currNode.data.content
+				+ currNode.data.placeName + " " + currNode.data.content
 				+ insertButton + deleteButton + "</li>";
 		
 		preId = tarId;
-		currNode = POINodeMap.get(currNode.nextId);
+		currNode = POINodeMap.find(currNode.nextId);
 	}
 	var insertButton = "<button id='i"
 		+ preId
@@ -42,10 +48,12 @@ function updatePOItabs() {
 	
 	$(".insertPOIbuttoon").click(function(e) {
 		var preId = $(this).attr("id").substr(1);
-		var placeName = $("#POItitle").val();
 		var content = $("#POIcontent").val();
-		if(placeName != null)
+		var placeName = $("#POItitle").val();
+		if(placeName != null) {
 			addPOI(preId, placeName, content);
+			updatePOItabs();
+		}
 	});
 	
 	$(".deletePOIbuttoon").click(function(e) {
@@ -53,6 +61,7 @@ function updatePOItabs() {
 		deletePOI(targetId);
 	});
 }
+updatePOItabs();
 
 var lastActivePOI = null;
 function clictPOIEvent() {
@@ -71,6 +80,11 @@ function clictPOIEvent() {
 		connect(startId, endId, title, content);
 	}
 }
+
+$("#placePOI").click(function() {
+	var title = $("#POItitle").val();
+	fetchPOIByName(title);
+});
 
 $("#broadMessage").click(function() {
 

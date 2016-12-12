@@ -14,7 +14,7 @@ function Timestamp(srn, opcnt , user , lastUpdateSRN) {
 	this.globalClock;
 	
 	this.createIdentifier = function() {
-		return this.user+this.opcnt;
+		return this.user+":"+this.opcnt;
 	}
 	//torder(this) < torder(ts)
 	this.torder = function(ts) {
@@ -75,11 +75,11 @@ function Timestamp(srn, opcnt , user , lastUpdateSRN) {
 }
 
 Timestamp.createZeroTimestamp = function(user) {
-	return Timestamp(-1,-1, user, -1); 
+	return new Timestamp(-1,-1, user, -1); 
 }
 
 Timestamp.createInfiniteTimestamp = function(user) {
-	return Timestamp(0x3fffffff,0x3fffffff,username,0x3fffffff);
+	return new Timestamp(0x3fffffff,0x3fffffff,user,0x3fffffff);
 }
 
 // ts1 -> ts2

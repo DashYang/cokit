@@ -3,7 +3,7 @@ var nodeToEdge = new Object();
 
 function addPOI(preId, placeName, content) {
 	var opcnt = localHistoryBuffer.getSize();
-	var lastUpdateSRN = remotelocalHistoryBuffer.getSRN();
+	var lastUpdateSRN = remoteHistoryBuffer.getSRN();
 	var timestamp = new Timestamp(null, opcnt , me, lastUpdateSRN);
 	
 	var data = {"placeName" : placeName, "content" : content};
@@ -27,7 +27,7 @@ function addPOI(preId, placeName, content) {
 
 function deletePOI(targetId) {
 	var opcnt = localHistoryBuffer.getSize();
-	var lastUpdateSRN = remotelocalHistoryBuffer.getSRN();
+	var lastUpdateSRN = remoteHistoryBuffer.getSRN();
 	var timestamp = new Timestamp(null, opcnt , me, lastUpdateSRN);
 	var operation = new RefinedOperation("delete", targetId, null);
 	var message = new RefinedMessage(operation, timestamp);
@@ -53,7 +53,7 @@ function connect(startId, endId, title, content) {
 	var node = LinkedListNode.createNewNode(identifier, data, me, timestamp)
 	
 	//bind call back functions
-	node.onCallBackFunction = addLineBasedOnGoogleMap;
+	node.onCallBackFunction = addPOIBasedOnGoogleMap;
 	node.offCallBackFunction = null;
 	
 	var lastInsertNode = EdgeNodeMap.getLastInsertNode();

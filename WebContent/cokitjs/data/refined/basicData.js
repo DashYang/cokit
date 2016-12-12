@@ -24,24 +24,24 @@ function LinkedListNode(identifier, data, nextId, insertTimestamp,
 	this.onCallBackFunction = null;
 	this.offCallBackFunction = null;
 	this.on = function() {
-		isEffective = true;
+		this.isEffective = true;
 		// to do: call back function
 		if(this.onCallBackFunction != null)
-			onCallBackFunction(this);
+			this.onCallBackFunction(this);
 	}
 
 	this.off = function() {
-		isEffective = false;
+		this.isEffective = false;
 		// to do: call back function
 		if(this.onCallBackFunction != null)
-			offCallBackFunction(this);
+			this.offCallBackFunction(this);
 	}
 }
 
 LinkedListNode.createNewNode = function(identifier, data, me, timestamp) {
 	var zeroTS = Timestamp.createZeroTimestamp(me);
-	var infiTS = imestamp.createInfiniteTimestamp(me);
-	return LinkedListNode(identifier, data, null, timestamp, infiTS, zeroTS)
+	var infiTS = Timestamp.createInfiniteTimestamp(me);
+	return new LinkedListNode(identifier, data, null, timestamp, infiTS, zeroTS)
 };
 
 /**
@@ -81,33 +81,34 @@ function NodeMap(description, me) {
 	this.map[this.tailNode.identifier] = this.tailNode;
 
 	this.find = function(targetId) {
-		return map[target];
+		return this.map[targetId];
 	}
 
 	this.getLastInsertNode = function() {
-		return lastInsertNode;
+		return this.lastInsertNode;
 	}
 	
 	this.getHeadNode = function () {
-		return headNode;
+		return this.headNode;
 	}
 	
 	this.getTailNode = function () {
-		return tailNode;
-	}
+		return this.tailNode;
+	};
 
 	this.insert = function(preId, node) {
-		preNode = find(preId);
+		var preNode = this.find(preId);
 		if (preNode == null) {
 			console.log("can't find " + preId + " in local replca! ignore");
 			return;
 		}
-		if (find(node.identifier) != null) {
+		if (this.find(node.identifier) != null) {
 			console.log(node.identifier
-					+ " already exists in local replca! ignore");
+					+ " already exists in local replica! ignore");
 			return;
 		}
 		node.nextId = preNode.nextId;
+		preNode.nextId = node.identifier;
 		this.map[node.identifier] = node;
 		lastInsertNode = node;
 	};
@@ -116,7 +117,7 @@ function NodeMap(description, me) {
 	this.update = function(targetId, node) {
 		preNode = find(targetId);
 		if (preNode == null) {
-			console.log("can't find " + preId + " in local replca! ignore");
+			console.log("can't find " + preId + " in local replica! ignore");
 			return;
 		}
 		map[targetId] = node;
@@ -132,23 +133,16 @@ function NodeMap(description, me) {
 		var type = refinedMessage.refinedOperation.type;
 		switch (type) {
 		case "insert":
-			var realPrevious = rangeScan(this, targetId, timestamp);
-			var identifier = timestamp.createIdentifier();
-			var data = refinedMessage.refinedOperation.data;
-			var zeroTimestamp = Timestamp.createZeroTimestamp(timestamp.user);
-			var infiniteTimestamp = Timestamp
-					.createInfiniteTimestamp(timestamp.user);
-			newNode = new LinkedListNode(identifier, data, null, zeroTimestamp,
-					infiniteTimestamp, zeroTimestamp);
+			var realPrevious = this.rangeScan(this, targetId, timestamp);
+			var newNode = refinedMessage.refinedOperation.node;
+			this.insert(realPrevious, newNode); // automatically fill in the
 			newNode.on();
-			insert(realPrevious, newNode); // automatically fill in the
-			// nextId
 			break;
 		case "delete":
 			var targetNode = find(targetId);
 			if (timetamp.torder(targetNode) == true) {
 				targetNode.deleteTimestamp = timestamp;
-				update(targetId, targetNode);
+				this.update(targetId, targetNode);
 			}
 			targetNode.off();
 			break;
@@ -156,9 +150,8 @@ function NodeMap(description, me) {
 			var targetNode = find(targetId);
 			if (timetamp.torder(targetNode) == true) {
 				targetNode.deleteTimestamp = timestamp;
-				update(targetId, targetNode);
+				this.update(targetId, targetNode);
 			}
-			targetNode.off();
 			break;
 		// todo defined your customized operation
 		default:

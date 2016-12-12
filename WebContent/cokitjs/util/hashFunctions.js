@@ -1,4 +1,4 @@
-function uuid() {
+function getUuid() {
     var s = [];
     var hexDigits = "0123456789abcdef";
     for (var i = 0; i < 36; i++) {

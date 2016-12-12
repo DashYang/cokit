@@ -45,7 +45,8 @@ html,body,#map-canvas {
 		<div class='row'>
 			<div class='col-md-8'>
 				<input id='POItitle' placeholder="POI"></input> <input
-					id='POIContent' placeholder="content" type="text"></input> 
+					id='POIcontent' placeholder="content" type="text"></input>
+					<button id="placePOI">place POI</button> 
 				<br> <span id='piclPOI'></span>
 				<div class='board'>
 					<div id="map-canvas"></div>

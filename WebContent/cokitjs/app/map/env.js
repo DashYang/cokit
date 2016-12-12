@@ -1,5 +1,5 @@
 //to denote who I am
-var me = uuid;
+var me = getUuid();
 
 // AST dependencies
 /**
@@ -7,7 +7,7 @@ var me = uuid;
  * hitory buffer
  */
 localHistoryBuffer = new HistoryBuffer();
-remoteHistroyBuffer = new HistoryBuffer();
+remoteHistoryBuffer = new HistoryBuffer();
 /**
  * need inlcude data/refined/basicData.js first create NodeMap
  */
@@ -16,6 +16,7 @@ EdgeNodeMap = new NodeMap("POI", me);
 
 // google map dependencies
 var itineraryPlanningMap;
+var placeNameMapToPOIMarker = new Object();
 function initialize() {
 	itineraryPlanningMap = new google.maps.Map(document
 			.getElementById('map-canvas'), {
@@ -37,24 +38,46 @@ function initGoogleAutoCompleteText() {
 	});
 }
 
-function findPlace(placeName) {
+// create POIMarker
+function createPOIMarker(place) {
+	var latLng = place.geometry.location;
+	var POIMarker = new google.maps.Marker({
+		position  : latLng,
+		title     : place.title,
+		animation : google.maps.Animation.DROP,
+	});
+	placeNameMapToPOIMarker[place.title] = POIMarker;
+	
+	POIMarker.setMap(itineraryPlanningMap);
+	POIMarker.addListener('click', clictPOIEvent);
+}
+
+// fetch POIMarker
+function fetchPOIByName(placeName) {
+	var centerPoint = itineraryPlanningMap.getCenter();
 	var request = {
 		location : centerPoint,
 		radius : '500',
 		query : placeName
 	};
-	service = new google.maps.places.PlacesService(map);
-	var place;
-	service.textSearch(request, place = callback);
-	return place;
+	service = new google.maps.places.PlacesService(itineraryPlanningMap);
+	if(placeNameMapToPOIMarker[placeName] == null) {
+		service.textSearch(request, callback);	
+	} else {
+		createPOIMarker(placeNameMapToPOIMarker[placeName]);
+	}
 }
-// POI search callback function，to mark address
+
+
+
+// POI search callback function place a POI down
 function callback(results, status) {
 	if (status == google.maps.places.PlacesServiceStatus.OK /** && content != ""* */
 	) {
 		if (results.length > 0) {
 			var place = results[0];
-			return place;
+			placeNameMapToPOIMarker[place.title] = place;
+			createPOIMarker(place);
 		}
 	} else {
 		alert("places services status is no ok");
@@ -63,29 +86,14 @@ function callback(results, status) {
 google.maps.event.addDomListener(window, 'load', initialize);
 
 // function based on google map
-var POIMarkers = new Object();
-var EdgeMarkers = new Object();
+var stablePOIMarkers = new Object();
+var stableEdgeMarkers = new Object();
 
-//call back functions
+//add POI
 function addPOIBasedOnGoogleMap(node) {
-	var identifier = node.identifier;
 	var POItitle = node.data.placeName;
-	var content = node.data.content;
-	var place = findPlace(POItitle);
-	var latLng = place.geometry.location;
 	
-	var POIMarker = new google.maps.Marker({
-		position : latLng,
-		title : title,
-		content : content,
-		identifier : identifier,
-		animation : google.maps.Animation.DROP,
-	});
-	placeMarker(POIMarker, map);
-	POIMarker.addListener('click', clictPOIEvent);
-
-	POIMarkers[identifier] = POIMarker;
-	map.panTo(latLng);
+	fetchPOIByName(POItitle);
 }
 
 function addLineBasedOnGoogleMap(node) {
