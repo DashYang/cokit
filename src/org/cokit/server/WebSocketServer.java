@@ -10,6 +10,7 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
 import org.apache.log4j.Logger;
+import org.cokit.data.ActionType;
 import org.cokit.session.SessionHandler;
 import org.cokit.session.SessionPool;
 
@@ -55,50 +56,63 @@ public class WebSocketServer {
 		// extract identified information from JSON Message
 		String sessionId = session.getId();
 		String cokey = messageJSON.getString("cokey");
+		String action = messageJSON.getString("action");
 
-		// create sessionHandler for cokey
+		// important information misses, ignore
+		if (cokey == null || action == null) {
+			logger.info("unrecognized type of message, ignore..." + message);
+			return;
+		}
+
 		this.sessionPool = SessionPool.newInstance();
 		sessionPool.addSessionHandler(cokey);
 
-		// old session
-		if (registerTable.contains(sessionId)) {
-			// session shifts
-			if (!cokey.equals(registerTable.get(sessionId).toString())) {
-				String oldCoKey = registerTable.get(sessionId);
-				// remove past connection
-				SessionHandler pastSessionhandler = sessionPool
-						.getSessionHandler(oldCoKey);
-				pastSessionhandler.removeConnection(sessionId);
-				
+		switch (ActionType.valueOf(action)) {
+		case LOGIN:
+			// old session
+			if (registerTable.contains(sessionId)) {
+				// session shifts
+				if (!cokey.equals(registerTable.get(sessionId).toString())) {
+					String oldCoKey = registerTable.get(sessionId);
+					// remove past connection
+					SessionHandler pastSessionhandler = sessionPool
+							.getSessionHandler(oldCoKey);
+					pastSessionhandler.removeConnection(sessionId);
+
+					// add new connection
+					SessionHandler newSessionhandler = sessionPool
+							.getSessionHandler(cokey);
+					newSessionhandler.addSession(sessionId, session);
+
+					logger.info("shift from  " + oldCoKey + " to " + cokey);
+				}
+			} else { // new session
 				// add new connection
 				SessionHandler newSessionhandler = sessionPool
 						.getSessionHandler(cokey);
 				newSessionhandler.addSession(sessionId, session);
-				
-				logger.info("shift from  " + oldCoKey + " to " + cokey);
 			}
-		} else { //new session
-			// add new connection 
-			SessionHandler newSessionhandler = sessionPool
-					.getSessionHandler(cokey);
-			newSessionhandler.addSession(sessionId , session);
+			// update register table
+			registerTable.put(sessionId, cokey);
+			break;
+		case BROADCAST:
+			// create sessionHandler for cokey
+			SessionHandler sessionHandler = sessionPool.getSessionHandler(cokey);
+
+			// server completer timestamp
+			int globalState = sessionHandler.assignHandlerGlobalState();
+			String globalClock = sessionHandler.getGlobalClock();
+			JSONObject timestampJSON = messageJSON.getJSONObject("timestamp");
+			timestampJSON.element("srn", globalState);
+			timestampJSON.element("globalClock", globalClock);
+			messageJSON.element("timestamp", timestampJSON);
+			// broadcast new message
+			sessionHandler.broadcastToAll(messageJSON.toString());
+			break;
+		default:
+			logger.info("unrecognized type of message, ignore" + message);
+			break;
 		}
-		//update register table
-		registerTable.put(sessionId, cokey);
-		
-		SessionHandler sessionHandler = sessionPool.getSessionHandler(cokey);
-		
-		//server completer timestamp
-		int globalState = sessionHandler.assignHandlerGlobalState();
-		String globalClock = sessionHandler.getGlobalClock();
-		JSONObject timestampJSON = messageJSON.getJSONObject("timestamp");
-		timestampJSON.element("globalState", globalState);
-		timestampJSON.element("globalClock", globalClock);
-		messageJSON.element("timestamp", timestampJSON);
-		//broadcast new message
-		sessionHandler.broadcastToAll(messageJSON.toString());
-		
-		logger.info("Message from " + session.getId() + ": " + message);
 	}
 
 	/**
@@ -108,7 +122,6 @@ public class WebSocketServer {
 	 */
 	@OnClose
 	public void onClose(Session session) {
-
 		logger.info("Session " + session.getId() + " has ended");
 	}
 

@@ -67,7 +67,7 @@ html,body,#map-canvas {
 						<span class="label label-default">Edges(right click to
 							delete)</span>
 					</h3>
-					<ul id='lineList' class="list-group">
+					<ul id='edgeList' class="list-group">
 					</ul>
 					<!-- 		<button id="myItinerary">My Itinerary</button>  -->
 				</div>
@@ -101,11 +101,12 @@ html,body,#map-canvas {
 	<!-- /.modal -->
 </body>
 </html>
-<!-- necessary js file -->
-<script type="text/javascript" src="./cokitjs/util/hashFunctions.js"></script>
+<!-- AST-Engine:necessary js file -->
+<script type="text/javascript" src="./cokitjs/util/tools.js"></script>
 <script type="text/javascript" src="./cokitjs/data/timestamp.js"></script>
 <script type="text/javascript" src="./cokitjs/data/refined/basicData.js"></script>
 <script type="text/javascript" src="./cokitjs/data/historyBuffer.js"></script>
+<script type="text/javascript" src="./cokitjs/session.js"></script>
 
 <!-- customized js file -->
 <!-- google map -->
@@ -114,6 +115,6 @@ html,body,#map-canvas {
 	type="text/javascript"></script>
 <script type="text/javascript"
 	src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBE6NUJDzJYX4DYBiUcfyQcaWy2o0pWRl4&libraries=places"></script>
-<script type="text/javascript" src="./cokitjs/app/map/env.js"></script>
+<script type="text/javascript" src="./cokitjs/app/map/customizedService.js"></script>
+<script type="text/javascript" src="./cokitjs/app/map/data.js"></script>
 <script type="text/javascript" src="./cokitjs/app/map/userInterface.js"></script>
-<script type="text/javascript" src="./cokitjs/app/map/facade.js"></script>

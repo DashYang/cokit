@@ -28,30 +28,40 @@ function LinkedListNode(identifier, data, nextId, insertTimestamp,
 		// to do: call back function
 		if(this.onCallBackFunction != null)
 			this.onCallBackFunction(this);
-	}
+	};
 
 	this.off = function() {
 		this.isEffective = false;
 		// to do: call back function
 		if(this.onCallBackFunction != null)
 			this.offCallBackFunction(this);
-	}
+	};
 }
 
-LinkedListNode.createNewNode = function(identifier, data, me, timestamp) {
+LinkedListNode.createNewNode = function(identifier, data, user, timestamp) {
 	var zeroTS = Timestamp.createZeroTimestamp(me);
 	var infiTS = Timestamp.createInfiniteTimestamp(me);
-	return new LinkedListNode(identifier, data, null, timestamp, infiTS, zeroTS)
+	return new LinkedListNode(identifier, data, null, timestamp, infiTS, zeroTS);
 };
 
 /**
  * when type == "delete" or "update", targetId is the identifier of
  * target,otherwise it's the identifier of logical previous node
  */
-function RefinedOperation(type, targetId, node) {
+function RefinedOperation(type, targetId, data) {
 	this.type = type;
 	this.targetId = targetId;
-	this.node = node;
+	this.data = data;
+	
+	this.writeToMessage = function(){
+		return {type:this.type, targetId: this.targetId, data: this.data};
+	};
+	
+	this.readFromMessage = function(message) {
+		this.type = message.type;
+		this.targetId = message.targetId;
+		this.data = message.data;
+	};
 }
 
 /**
@@ -60,14 +70,32 @@ function RefinedOperation(type, targetId, node) {
 function RefinedMessage(refinedOperation, timestamp) {
 	this.refinedOperation = refinedOperation;
 	this.timestamp = timestamp;
+	
+	this.createLinkedListNodeFromMessage = function() {
+		var identifier = this.timestamp.createIdentifier();
+		var data =  this.refinedOperation.data;
+		var infiTS = Timestamp.createInfiniteTimestamp(this.timestamp.user);
+		return new  LinkedListNode(identifier, data, null, this.timestamp,
+				infiTS, this.timestamp);
+	};
+	
+	this.writeToMessage = function(){
+		return {refinedOperation: this.refinedOperation.writeToMessage(), timestamp: this.timestamp.writeToMessage()};
+	};
+	
+	this.readFromMessage = function(message) {
+		this.refinedOperation = new RefinedOperation(message.refinedOperation.type, message.refinedOperation.targetId,
+				message.refinedOperation.data);
+		this.timestamp = new Timestamp(message.timestamp.srn, message.timestamp.opcnt , message.timestamp.user , message.timestamp.lastUpdateSRN);
+	};
 }
 
 /**
  * nodeMap's basic operation
  */
-// head and tail node for nodeMap
 function NodeMap(description, me) {
 	this.description = description;
+	this.owner = me;
 	this.map = new Object();
 	this.lastInsertNode = null;
 
@@ -79,18 +107,19 @@ function NodeMap(description, me) {
 
 	this.map[this.headNode.identifier] = this.headNode;
 	this.map[this.tailNode.identifier] = this.tailNode;
+	
 
 	this.find = function(targetId) {
 		return this.map[targetId];
-	}
+	};
 
 	this.getLastInsertNode = function() {
 		return this.lastInsertNode;
-	}
+	};
 	
 	this.getHeadNode = function () {
 		return this.headNode;
-	}
+	};
 	
 	this.getTailNode = function () {
 		return this.tailNode;
@@ -120,52 +149,65 @@ function NodeMap(description, me) {
 			console.log("can't find " + preId + " in local replica! ignore");
 			return;
 		}
-		map[targetId] = node;
+		this.map[targetId] = node;
 	};
 
 	// bind specify range scan algorithm
 	this.rangeScan = traditionalRangeScan;
 
-	this.execute = function(refinedMessage)
+	this.execute = function(refinedMessage, localHistoryBuffer)
 	{
 		var targetId = refinedMessage.refinedOperation.targetId;
 		var timestamp = refinedMessage.timestamp;
 		var type = refinedMessage.refinedOperation.type;
 		switch (type) {
 		case "insert":
-			var realPrevious = this.rangeScan(this, targetId, timestamp);
-			var newNode = refinedMessage.refinedOperation.node;
+			var realPrevious = this.rangeScan(this, targetId, timestamp, localHistoryBuffer);
+			var newNode = refinedMessage.createLinkedListNodeFromMessage();
 			this.insert(realPrevious, newNode); // automatically fill in the
 			newNode.on();
 			break;
 		case "delete":
-			var targetNode = find(targetId);
-			if (timetamp.torder(targetNode) == true) {
+			var targetNode = this.find(targetId);
+			if (timestamp.torder(targetNode.deleteTimestamp, localHistoryBuffer) == true) {
 				targetNode.deleteTimestamp = timestamp;
 				this.update(targetId, targetNode);
 			}
 			targetNode.off();
 			break;
 		case "update":
-			var targetNode = find(targetId);
-			if (timetamp.torder(targetNode) == true) {
-				targetNode.deleteTimestamp = timestamp;
+			var targetNode = this.find(targetId);
+			var newNode = refinedMessage.createLinkedListNodeFromMessage();
+			if (targetNode.updateTimestamp.torder(timestamp, localHistoryBuffer) == true) {
+				targetNode.updateTimestamp = timestamp;
+				targetNode.data = newNode.data;
 				this.update(targetId, targetNode);
 			}
 			break;
 		// todo defined your customized operation
+			
 		default:
-			console.log("unrecognized type")
+			console.log("unrecognized type");
 			break;
 		}
-	}
+	};
+	
+	this.getEffectiveNodeList = function() {
+		var currNode = this.getHeadNode();
+		var tailNode = this.getTailNode();
+		currNode = this.find(currNode.nextId);
+		var result = new Array();
+		while (currNode != tailNode) {
+			if(currNode.isEffective == false) {
+				currNode = this.find(currNode.nextId);
+				continue;
+			}
+			result.push(currNode);
+			currNode = this.find(currNode.nextId);
+		}
+		return result;
+	};
 };
-
-function torder(ts1, ts2) {
-	console.log(ts1.opcnt + ts1.user);
-	console.log(ts2.opcnt + ts2.user);
-	return (ts1.opcnt + ts1.user) < (ts2.opcnt + ts2.user);
-}
 
 /**
  * two weird operation could happened or not?
@@ -175,32 +217,32 @@ function torder(ts1, ts2) {
  * @param ts
  * @returns
  */
-function traditionalRangeScan(nodeMap, targetId, ts) {
+function traditionalRangeScan(nodeMap, targetId, ts, localHistoryBuffer) {
 	var nextId = nodeMap.map[targetId].nextId;
 	var realPreviousId = null;
+	
 	previousId = targetId;
 	var current = nodeMap.map[nextId];
 	currentTS = current.insertTimestamp;
-	while (!isHappenedBefore(currentTS, ts)) { //
-		if (isHappenedBefore(ts, currentTS) == true) {
+	while (!currentTS.isHappenedBefore(ts, localHistoryBuffer)) { //
+		if ( ts.isHappenedBefore(currentTS, localHistoryBuffer) == true ) {
 			console.log("weired operation??? current timestampe:" + currentTS
 					+ " insert timestamp:" + ts);
 		}
-		if (torder(ts, currentTS) && realPreviousId == null) {
+		if ( ts.torder(currentTS, localHistoryBuffer) && realPreviousId == null) {
 			realPreviousId = previousId;
 		}
-		if (torder(currentTS, ts)
+		if ( currentTS.torder(ts, localHistoryBuffer)
 				&& realPreviousId != null
-				&& !isHappenedBefore(currentTS,
-						nodeMap.map[realPreviousId].insertTimestamp)) {
+				&& !currentTS.isHappenedBefore(
+						nodeMap.map[realPreviousId].insertTimestamp, localHistoryBuffer)) {
 			console.log("weired operation??? current timestampe:" + currentTS
 					+ " realPrevious timestamp:"
 					+ nodeMap.map[realPreviousId].insertTimestamp);
 		}
-		if (torder(currentTS, ts)
+		if ( currentTS.torder(ts, localHistoryBuffer)
 				&& realPreviousId != null
-				&& isHappenedBefore(currentTS,
-						nodeMap.map[realPreviousId].insertTimestamp)) {
+				&& currentTS.isHappenedBefore(nodeMap.map[realPreviousId].insertTimestamp,localHistoryBuffer)) {
 			realPreviousId = null;
 		}
 		previousId = current.identifier;

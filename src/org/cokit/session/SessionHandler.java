@@ -68,6 +68,7 @@ public class SessionHandler {
 	public synchronized void broadcastToAll(String message) {
 		logger.info("broadcast message " + message);
 		Set<String> abnormalSessions = new HashSet<String>();
+		logger.info("broadcast user number: " + onlineUsers.keySet().size());
 		for (String siteId : onlineUsers.keySet()) {
 			try {
 				Session user = onlineUsers.get(siteId);
