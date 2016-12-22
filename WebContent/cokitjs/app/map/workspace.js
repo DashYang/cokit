@@ -18,6 +18,7 @@ function itineraryPlanningWorkSpace() {
 		this.reflectEdgeFromTraditionalDataModel(service.EdgeArrayList.getEffectiveNodeList());
 	};
 
+	this.reflectPOI = function(nodeMap) {
 		var POIList = nodeMap.getEffectiveNodeList();
 		var preId = nodeMap.getHeadNode().identifier;
 		var listHtml = "";
