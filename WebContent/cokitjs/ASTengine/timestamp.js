@@ -26,7 +26,7 @@ function Timestamp(srn, opcnt , user , lastUpdateSRN) {
 		
 		this.localClock = message.localClock;
 		this.globalClock = message.globalClock;
-	}
+	};
 	
 	this.createIdentifier = function() {
 		return this.user+":"+this.opcnt;

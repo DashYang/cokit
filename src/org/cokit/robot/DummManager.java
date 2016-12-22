@@ -14,7 +14,8 @@ public class DummManager {
 		int concurrentUserNumber = 1;
 		List<Thread> threads = new ArrayList<>();
 		for(int i = 0 ; i < concurrentUserNumber; i ++ ) {
-			DummyUser du = new DummyUser(20, 5, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/map.jsp");
+//			DummyUser du = new DummyUser(20, 5, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/map.jsp");
+			DummyUser du = new DummyUser(20, 5, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/traditionalmap.jsp");
 			Thread thread = new Thread(du);
 			threads.add(thread);
 		}

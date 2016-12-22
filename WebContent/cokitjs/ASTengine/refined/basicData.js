@@ -39,8 +39,8 @@ function LinkedListNode(identifier, data, nextId, insertTimestamp,
 }
 
 LinkedListNode.createNewNode = function(identifier, data, user, timestamp) {
-	var zeroTS = Timestamp.createZeroTimestamp(me);
-	var infiTS = Timestamp.createInfiniteTimestamp(me);
+	var zeroTS = Timestamp.createZeroTimestamp(user);
+	var infiTS = Timestamp.createInfiniteTimestamp(user);
 	return new LinkedListNode(identifier, data, null, timestamp, infiTS, zeroTS);
 };
 
@@ -112,7 +112,8 @@ function NodeMap(description, me) {
 	this.find = function(targetId) {
 		return this.map[targetId];
 	};
-
+	
+	//useless?
 	this.getLastInsertNode = function() {
 		return this.lastInsertNode;
 	};
@@ -254,6 +255,7 @@ function traditionalRangeScan(nodeMap, targetId, ts, localHistoryBuffer) {
 	else
 		return realPreviousId;
 }
+
 
 function refinedRangeScan(nodeMap, targetId, ts) {
 	var nextId = nodeMap.map[targetId].nextId;

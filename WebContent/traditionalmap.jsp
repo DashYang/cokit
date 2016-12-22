@@ -104,7 +104,7 @@ html,body,#map-canvas {
 <!-- AST-Engine:necessary js file -->
 <script type="text/javascript" src="./cokitjs/util/tools.js"></script>
 <script type="text/javascript" src="./cokitjs/ASTengine/timestamp.js"></script>
-<script type="text/javascript" src="./cokitjs/ASTengine/refined/basicData.js"></script>
+<script type="text/javascript" src="./cokitjs/ASTengine/traditional/basicdata.js"></script>
 <script type="text/javascript" src="./cokitjs/ASTengine/historyBuffer.js"></script>
 <script type="text/javascript" src="./cokitjs/ASTengine/pipe.js"></script>
 
@@ -115,7 +115,7 @@ html,body,#map-canvas {
 	type="text/javascript"></script>
 <script type="text/javascript"
 	src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBE6NUJDzJYX4DYBiUcfyQcaWy2o0pWRl4&libraries=places"></script>
-<script type="text/javascript" src="./cokitjs/app/map/refined/customizedService.js"></script>
+<script type="text/javascript" src="./cokitjs/app/map/traditional/customizedService.js"></script>
 <script type="text/javascript" src="./cokitjs/app/map/workspace.js"></script>
 <script type="text/javascript" src="./cokitjs/app/map/data.js"></script>
-<script type="text/javascript" src="./cokitjs/app/map/refined/userInterface.js"></script>
+<script type="text/javascript" src="./cokitjs/app/map/traditional/userInterface.js"></script>
