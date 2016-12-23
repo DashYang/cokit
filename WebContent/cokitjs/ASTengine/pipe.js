@@ -54,4 +54,8 @@ function Sender(project, serviceName, cokey,
 		message.action = "SYNCHRONIZATION";
 		this.send(message);
 	};
+	
+	this.bindOnMessageCallBackFunction = function( callbackFunction ) {
+		this.ws.onmessage = callbackFunction;
+	}
 }

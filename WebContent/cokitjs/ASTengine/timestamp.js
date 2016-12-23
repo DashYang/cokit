@@ -58,7 +58,7 @@ function Timestamp(srn, opcnt , user , lastUpdateSRN) {
 				return this.srn < srn;
 			}
 		} else {
-			return this.srn < ts.SRN;
+			return this.srn < ts.srn;
 		}
 	};
 	
@@ -79,7 +79,7 @@ function Timestamp(srn, opcnt , user , lastUpdateSRN) {
 				return false;
 			}
 		} else if (this.user != me && ts.user != me) { // R->R(different user)
-			if (this.srn <= this.lastUpdateSRN) {
+			if (this.srn <= ts.lastUpdateSRN) {
 				return true;
 			}
 			else {

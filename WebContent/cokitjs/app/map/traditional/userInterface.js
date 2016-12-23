@@ -5,10 +5,45 @@
 var me = getUrlParam("user");
 var cokey = "itineraryplanning-traditional";
 
-var sender = new Sender("cokit", "CoKitServer", cokey, null, onMessage, null);
+var sender = new Sender("cokit", "CoKitServer", cokey, null, fetchHistoryRecordCallBackFuncion, null);
 
 var sharedWorkSpace = new itineraryPlanningWorkSpace();
 var itineraryplanningService = new ItineraryPlanningService(me, sender, sharedWorkSpace);
+
+/**
+ * fetch histroy records
+ */
+function fetchMessages() {
+	var timestamp = itineraryplanningService.createLocalTimestamp();
+	var message = new TraditionalMessage(null, timestamp);
+	sender.synchronizeMessages(message);
+}
+
+function fetchHistoryRecordCallBackFuncion(evt) {
+	var jsonMessage = evt.data;
+	if(jsonMessage == "Connection Established") {
+		sender.isReady = true;
+		sender.login();
+		fetchMessages();
+		return;
+	}
+	var cleanmessages = JSON.parse(jsonMessage);
+	
+	for(var index in cleanmessages) {
+		var cleanmessage = cleanmessages[index];
+		var message = new TraditionalMessage(null,null);
+		message.readFromMessage(cleanmessage);
+		itineraryplanningService.receiveMessage(message);
+	}
+	itineraryplanningService.run();
+	
+	bindPOIClickEvent();
+	bindEdgeClickEvent();
+	sender.bindOnMessageCallBackFunction(onMessage);
+}
+/**
+ * fetch over
+ */
 
 function onOpen() {
 	console.log("open");

@@ -9,11 +9,15 @@ function HistoryBuffer(owner) {
 		this.list.push(message);
 	};
 	
-	this.acknowledge = function(timestamp) {
+	this.acknowledge = function(message) {
+		var timestamp = message.timestamp;
 		var opcnt = timestamp.opcnt;
 		var srn = timestamp.srn;
+		//fetch local records from server(it is owner's message but local history doesnt't have, it has srn)
+		if(this.list[opcnt] == null) {
+			this.append(message);
+		}
 		this.list[opcnt].timestamp.srn = srn;
-		return srn;
 	};
 	
 	/**
@@ -28,7 +32,7 @@ function HistoryBuffer(owner) {
 			if (srn == null) {   //first create
 				this.append(message);
 			} else {             //ack
-				srn = this.acknowledge(message.timestamp);
+				this.acknowledge(message);
 			}
 		} else {   // other user's operation. always contains srn
 			this.append(message);

@@ -111,7 +111,7 @@ function ArrayList(description, owner) {
 		}
 		var newMessage = $.extend(true, {}, message);
 		var newNode = new ArrayListNode(newMessage);
-		this.arrayList.splice(targetIndex, 0 , newNode  );
+		this.arrayList.splice(targetIndex, 0 , newNode);
 	};
 	
 	//delete or update node, delete just fill in the delete timestamp
@@ -159,10 +159,28 @@ function ArrayList(description, owner) {
 	};
 	
 	this.retrace = function(timestamp, localHistoryBuffer) {
+		var result = new Array();
 		for(var index = 1; index < this.arrayList.length - 1; index ++) {
 			var node = this.arrayList[index];
 			node.isEffective(timestamp, localHistoryBuffer);
+			if(node.effectiveness == true && node.forceDelete == false) {
+				var latestData = node.getFirstMessage().traditionalOperation.data;
+				var biggestTimestamp = node.getFirstMessage().timestamp;
+				for(var messageIndex in node.messages) {
+					var curMessage = node.messages[messageIndex];
+					var curTimestamp = curMessage.timestamp;
+					if(biggestTimestamp.torder(curTimestamp, localHistoryBuffer) && 
+							curMessage.traditionalOperation.type != "delete") {
+						latestData = curMessage.traditionalOperation.data;
+						biggestTimestamp = curTimestamp;
+					}
+				}
+				latestData.identifier = node.identifier;
+				result.push(latestData);
+			}
 		}
+//		console.log(JSON.stringify(timestamp) + " " + JSON.stringify(result));
+		return result;
 	};
 	
 	

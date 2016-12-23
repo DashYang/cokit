@@ -26,10 +26,11 @@ public class WebSocketServer {
 	private SessionPool sessionPool = null;
 	private static final Logger logger = Logger.getLogger(WebSocketServer.class
 			.getName());
-
+	
 	// map from session.id to cokey
 	private static final ConcurrentHashMap<String, String> registerTable = new ConcurrentHashMap<String, String>();
-
+	
+	
 	/**
 	 * @OnOpen allows us to intercept the creation of a new session. The session
 	 *         class allows us to send data to the user. In the method onOpen,
@@ -70,6 +71,7 @@ public class WebSocketServer {
 		sessionPool.addSessionHandler(cokey);
 
 		JSONObject timestampJSON = null;
+		SessionHandler sessionHandler = null;
 		switch (ActionType.valueOf(action)) {
 		case LOGIN:
 			// old session
@@ -100,16 +102,21 @@ public class WebSocketServer {
 			break;
 		case BROADCAST:
 			// create sessionHandler for cokey
-			SessionHandler sessionHandler = sessionPool
+			sessionHandler = sessionPool
 					.getSessionHandler(cokey);
-
+			
+			//avoid the disorder of broadcasting messages
 			timestampJSON = messageJSON.getJSONObject("timestamp");
-			timestampJSON = sessionHandler.completeTimestamp(timestampJSON);
-			messageJSON.element("timestamp", timestampJSON);
-			// broadcast new message
-			sessionHandler.broadcastToAll(messageJSON.toString());
+			synchronized (sessionHandler) {
+				logger.info(sessionHandler.toString() + " handles this request");
+				timestampJSON = sessionHandler.completeTimestamp(timestampJSON);
+				messageJSON.element("timestamp", timestampJSON);
+				// broadcast new message
+				sessionHandler.broadcastToAll(messageJSON.toString());
 
-			sessionHandler.saveMessage(messageJSON);
+				sessionHandler.saveMessage(messageJSON);
+				sessionHandler.getThroughputRate();
+			}
 			break;
 		case SYNCHRONIZATION:
 			// create sessionHandler for cokey
@@ -117,19 +124,21 @@ public class WebSocketServer {
 
 			// server completer timestamp
 			timestampJSON = messageJSON.getJSONObject("timestamp");
-
-			// fetch history message records
 			int lastUpdateSRN = timestampJSON.getInt("lastUpdateSRN");
-			List<JSONObject> histroyRecords = sessionHandler
+			synchronized (sessionHandler) {
+				logger.info(sessionHandler.toString() + " handles this request");
+				// fetch history message records
+				List<JSONObject> histroyRecords = sessionHandler
 					.synchronizeMessages(lastUpdateSRN);
-			if(histroyRecords != null && histroyRecords.size() != 0)
 				reply(session, histroyRecords);
-
-			if(messageJSON.getJSONObject("refinedOperation") != null && !messageJSON.getJSONObject("refinedOperation").toString().equals("null")) {
-				logger.info(messageJSON.getJSONObject("refinedOperation").toString());
-				timestampJSON = sessionHandler.completeTimestamp(timestampJSON);
-				messageJSON.element("timestamp", timestampJSON);
-				sessionHandler.saveMessage(messageJSON);
+				
+				if(messageJSON.getJSONObject("refinedOperation") != null && !messageJSON.getJSONObject("refinedOperation").toString().equals("null")) {
+					logger.info(messageJSON.getJSONObject("refinedOperation").toString());
+					timestampJSON = sessionHandler.completeTimestamp(timestampJSON);
+					messageJSON.element("timestamp", timestampJSON);
+					sessionHandler.saveMessage(messageJSON);
+					sessionHandler.getThroughputRate();
+				}
 			}
 			break;
 		default:
@@ -144,9 +153,9 @@ public class WebSocketServer {
 			listJSONArray.add(message);
 		}
 		try {
+			logger.info("reply " + listJSONArray.toString());
 			requester.getBasicRemote().sendText(listJSONArray.toString());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			logger.info("requester " + requester.getId()
 					+ " meets unexpected error, records are "
 					+ listJSONArray.toString());

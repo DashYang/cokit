@@ -78,7 +78,7 @@ function ItineraryPlanningService(owner, sender, sharedWorkSpace) {
 			var edgeIndex = 1;
 			for(;edgeIndex < this.EdgeArrayList.arrayList.length - 1; edgeIndex +=1) {
 				var curEdge = this.EdgeArrayList.arrayList[edgeIndex];
-				if(curEdge.data.startId == targetIdentifier || curEdge.data.endId == targetIdentifier) {
+				if(curEdge.data.startUIDoP == targetIdentifier || curEdge.data.endUIDoP == targetIdentifier) {
                     curEdge.forceDelete = true;
                 }
 			}
@@ -92,12 +92,15 @@ function ItineraryPlanningService(owner, sender, sharedWorkSpace) {
 		case "connect":
 			message.traditionalOperation.type = "insert";
 
+			var timestamp = message.timestamp;
+			this.tempEffectivePOIList = this.POIArrayList.retrace(timestamp, this.localHistoryBuffer);
             var startId = this.tempEffectivePOIList[message.traditionalOperation.data.startId].identifier;
             var endId = this.tempEffectivePOIList[message.traditionalOperation.data.endId].identifier;
-            message.traditionalOperation.data.startId = startId;
-            message.traditionalOperation.data.endId = endId;
+            message.traditionalOperation.data.startUIDoP = startId;
+            message.traditionalOperation.data.endUIDoP = endId;
 
 			this.EdgeArrayList.execute(message, this.localHistoryBuffer, currentTimestamp);
+			
 			message.traditionalOperation.type = "connect";
 
 			break;

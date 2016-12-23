@@ -16,6 +16,9 @@ import javax.websocket.Session;
 import net.sf.json.JSONObject;
 
 import org.apache.log4j.Logger;
+import org.eclipse.jdt.internal.compiler.ast.ThisReference;
+
+import com.sun.corba.se.spi.orb.Operation;
 
 public class SessionHandler {
 	private String cokey = "";
@@ -30,7 +33,14 @@ public class SessionHandler {
 	
 	private static final Logger logger = Logger.getLogger(SessionHandler.class
 			.getName());
-
+	
+	
+	/**
+	 * server throughput rate experiment 
+	 */
+	private Long startTime = null;
+	private Long currentTime = null;
+	
 	public String getCokey() {
 		return cokey;
 	}
@@ -68,8 +78,8 @@ public class SessionHandler {
 	 */
 	public String getGlobalClock() {
 		Date nowDate = new Date();
-		Timestamp newTime = new Timestamp(nowDate.getTime());
-		return newTime.toString();
+		String newTime = String.valueOf(nowDate.getTime());
+		return newTime;
 	}
 	
 	/**
@@ -160,7 +170,7 @@ public class SessionHandler {
 	}
 	
 	public void saveMessage(JSONObject message) {
-		logger.info("handler saves message : " + message.toString());
+		logger.info(this.cokey + " handler saves message : " + message.toString());
 		messageLog.add(message);
 	}
 	/**
@@ -169,7 +179,26 @@ public class SessionHandler {
 	 * @return
 	 */
 	public List<JSONObject> synchronizeMessages(int lastUpdateSRN) {
+		logger.info("fetch " + this.cokey + " records");
 		List<JSONObject> result = this.messageLog.subList(lastUpdateSRN+1, globalState);
 		return result;
+	}
+	
+	/**
+	 * experiment: to calculate the throughput rate of server
+	 */
+	public void getThroughputRate() {
+		currentTime = new Date().getTime();
+		if(startTime == null) {
+			startTime = currentTime;
+		}
+		if(currentTime - startTime != 0) {
+			int operationNumber = messageLog.size();
+			logger.info("ops: " + 1000.0 * operationNumber / (currentTime - startTime));
+		}
+	}
+	
+	public String toString() {
+		return this.cokey;
 	}
 }
