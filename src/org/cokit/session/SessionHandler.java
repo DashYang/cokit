@@ -2,14 +2,18 @@ package org.cokit.session;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.Session;
+
+import net.sf.json.JSONObject;
 
 import org.apache.log4j.Logger;
 
@@ -18,6 +22,8 @@ public class SessionHandler {
 
 	// map from siteId to session
 	private static final ConcurrentHashMap<String, Session> onlineUsers = new ConcurrentHashMap<String, Session>();
+	// server history buffer;
+	private static final List<JSONObject> messageLog = new ArrayList<>();
 	
 	// handler global state
 	private static int globalState = 0;
@@ -25,6 +31,14 @@ public class SessionHandler {
 	private static final Logger logger = Logger.getLogger(SessionHandler.class
 			.getName());
 
+	public String getCokey() {
+		return cokey;
+	}
+
+	public void setCokey(String cokey) {
+		this.cokey = cokey;
+	}
+	
 	public SessionHandler(String cokey) {
 		this.setCokey(cokey);
 
@@ -136,11 +150,26 @@ public class SessionHandler {
 		onlineUsers.remove(siteId);
 	}
 	
-	public String getCokey() {
-		return cokey;
+	
+	public JSONObject completeTimestamp(JSONObject timestamp) {
+		int globalState = assignHandlerGlobalState();
+		String globalClock = getGlobalClock();
+		timestamp.element("srn", globalState);
+		timestamp.element("globalClock", globalClock);
+		return timestamp;
 	}
-
-	public void setCokey(String cokey) {
-		this.cokey = cokey;
+	
+	public void saveMessage(JSONObject message) {
+		logger.info("handler saves message : " + message.toString());
+		messageLog.add(message);
+	}
+	/**
+	 * support client pull's method to synchronize Messages
+	 * @param lastUpdateSrn
+	 * @return
+	 */
+	public List<JSONObject> synchronizeMessages(int lastUpdateSRN) {
+		List<JSONObject> result = this.messageLog.subList(lastUpdateSRN+1, globalState);
+		return result;
 	}
 }

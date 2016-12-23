@@ -30,7 +30,7 @@ public class DummyUser implements Runnable{
 	
 	private String user = "unknown";
 	private String url = "unknown";
-	
+	private int sleepTime = 100;
 	private Logger logger = Logger.getLogger(this.getClass());
 	
 	public DummyUser(int addPOI, int addLine, int updatePOI, int deletePOI,
@@ -64,7 +64,8 @@ public class DummyUser implements Runnable{
 		driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
 		for (int i = 0; i < addPOI; i++) {
 			appendPOI();
-			sleep(1000);
+			logger.info("execute the " + i + "operation");
+			sleep(sleepTime);
 		}
 		for (int i = 0; i < addLine; i++) {
 			try{
@@ -72,7 +73,7 @@ public class DummyUser implements Runnable{
 			}catch(Exception e){
 				e.printStackTrace();
 			}
-			sleep(1000);
+			sleep(sleepTime);
 		}
 		for (int i = 0; i < updatePOI; i++) {
 			try{
@@ -80,7 +81,7 @@ public class DummyUser implements Runnable{
 			}catch(Exception e){
 				e.printStackTrace();
 			}
-			sleep(1000);
+			sleep(sleepTime);
 		}
 		for (int i = 0; i < deletePOI; i++) {
 			try{
@@ -93,13 +94,13 @@ public class DummyUser implements Runnable{
 		for (int i = 0; i < deleteLine; i++) {
 			try {
 				disConnect();
-				sleep(1000);
+				sleep(sleepTime);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
 
-		sleep(5000);
+		sleep(sleepTime);
 
 	}
 

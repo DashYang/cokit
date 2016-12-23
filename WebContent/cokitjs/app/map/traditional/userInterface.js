@@ -3,7 +3,7 @@
  */
 //to denote who I am, necessary! default me is an uuid
 var me = getUrlParam("user");
-var cokey = "itineraryplanning";
+var cokey = "itineraryplanning-traditional";
 
 var sender = new Sender("cokit", "CoKitServer", cokey, null, onMessage, null);
 

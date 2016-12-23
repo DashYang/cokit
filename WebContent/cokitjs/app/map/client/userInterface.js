@@ -3,12 +3,20 @@
  */
 //to denote who I am, necessary! default me is an uuid
 var me = getUrlParam("user");
-var cokey = "itineraryplanning-refined";
+var cokey = "itineraryplanning-clientpull";
 
 var sender = new Sender("cokit", "CoKitServer", cokey, null, onMessage, null);
 
 var sharedWorkSpace = new itineraryPlanningWorkSpace();
 var itineraryplanningService = new ItineraryPlanningService(me, sender, sharedWorkSpace);
+
+// fetch messages after 1s
+setInterval(fetchMessages, 1000);
+function fetchMessages() {
+	var timestamp = itineraryplanningService.createLocalTimestamp();
+	var message = new RefinedMessage(null, timestamp);
+	sender.synchronizeMessages(message);
+}
 
 function onOpen() {
 	console.log("open");
@@ -21,10 +29,14 @@ function onMessage(evt) {
 		sender.login();
 		return;
 	}
-	var cleanmessage = JSON.parse(jsonMessage);
-	var message = new RefinedMessage(null,null);
-	message.readFromMessage(cleanmessage);
-	itineraryplanningService.receiveMessage(message);
+	var cleanmessages = JSON.parse(jsonMessage);
+	
+	for(var index in cleanmessages) {
+		var cleanmessage = cleanmessages[index];
+		var message = new RefinedMessage(null,null);
+		message.readFromMessage(cleanmessage);
+		itineraryplanningService.receiveMessage(message);
+	}
 	itineraryplanningService.run();
 	
 	bindPOIClickEvent();

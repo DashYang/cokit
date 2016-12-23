@@ -30,20 +30,28 @@ function Sender(project, serviceName, cokey,
 
 	this.ws.onclose = closeCallBackFunction;
 	
+	this.send = function(message) {
+		var jsonMessage = JSON.stringify(message);
+		this.ws.send(jsonMessage);
+	};
 	this.login = function() {
 		while(this.isReady == null || this.isReady == false) ; // waiting for the connecting state over
 			
 		var message = new Object();
 		message.cokey = this.cokey;
 		message.action = "LOGIN";
-		var jsonMessage = JSON.stringify(message);
-		this.ws.send(jsonMessage);
+		this.send(message);
 	};
 	
 	this.broadcast = function(message) {
 		message.cokey = this.cokey;
 		message.action = "BROADCAST";
-		var jsonMessage = JSON.stringify(message);
-		this.ws.send(jsonMessage);
+		this.send(message);
+	};
+	
+	this.synchronizeMessages = function(message) {
+		message.cokey = this.cokey;
+		message.action = "SYNCHRONIZATION";
+		this.send(message);
 	};
 }

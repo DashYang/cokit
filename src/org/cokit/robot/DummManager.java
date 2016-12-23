@@ -11,11 +11,11 @@ import java.util.List;
 public class DummManager {
 	
 	public static void main(String args[]) {
-		int concurrentUserNumber = 1;
+		int concurrentUserNumber = 2;
 		List<Thread> threads = new ArrayList<>();
 		for(int i = 0 ; i < concurrentUserNumber; i ++ ) {
-//			DummyUser du = new DummyUser(20, 5, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/map.jsp");
-			DummyUser du = new DummyUser(20, 5, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/traditionalmap.jsp");
+//			DummyUser du = new DummyUser(1000, 5, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/map.jsp");
+			DummyUser du = new DummyUser(500, 0, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/traditionalmap.jsp");
 			Thread thread = new Thread(du);
 			threads.add(thread);
 		}

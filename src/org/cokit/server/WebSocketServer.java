@@ -1,6 +1,7 @@
 package org.cokit.server;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.OnClose;
@@ -14,6 +15,7 @@ import org.cokit.data.ActionType;
 import org.cokit.session.SessionHandler;
 import org.cokit.session.SessionPool;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 /**
@@ -67,6 +69,7 @@ public class WebSocketServer {
 		this.sessionPool = SessionPool.newInstance();
 		sessionPool.addSessionHandler(cokey);
 
+		JSONObject timestampJSON = null;
 		switch (ActionType.valueOf(action)) {
 		case LOGIN:
 			// old session
@@ -97,21 +100,57 @@ public class WebSocketServer {
 			break;
 		case BROADCAST:
 			// create sessionHandler for cokey
-			SessionHandler sessionHandler = sessionPool.getSessionHandler(cokey);
+			SessionHandler sessionHandler = sessionPool
+					.getSessionHandler(cokey);
 
-			// server completer timestamp
-			int globalState = sessionHandler.assignHandlerGlobalState();
-			String globalClock = sessionHandler.getGlobalClock();
-			JSONObject timestampJSON = messageJSON.getJSONObject("timestamp");
-			timestampJSON.element("srn", globalState);
-			timestampJSON.element("globalClock", globalClock);
+			timestampJSON = messageJSON.getJSONObject("timestamp");
+			timestampJSON = sessionHandler.completeTimestamp(timestampJSON);
 			messageJSON.element("timestamp", timestampJSON);
 			// broadcast new message
 			sessionHandler.broadcastToAll(messageJSON.toString());
+
+			sessionHandler.saveMessage(messageJSON);
+			break;
+		case SYNCHRONIZATION:
+			// create sessionHandler for cokey
+			sessionHandler = sessionPool.getSessionHandler(cokey);
+
+			// server completer timestamp
+			timestampJSON = messageJSON.getJSONObject("timestamp");
+
+			// fetch history message records
+			int lastUpdateSRN = timestampJSON.getInt("lastUpdateSRN");
+			List<JSONObject> histroyRecords = sessionHandler
+					.synchronizeMessages(lastUpdateSRN);
+			if(histroyRecords != null && histroyRecords.size() != 0)
+				reply(session, histroyRecords);
+
+			if(messageJSON.getJSONObject("refinedOperation") != null && !messageJSON.getJSONObject("refinedOperation").toString().equals("null")) {
+				logger.info(messageJSON.getJSONObject("refinedOperation").toString());
+				timestampJSON = sessionHandler.completeTimestamp(timestampJSON);
+				messageJSON.element("timestamp", timestampJSON);
+				sessionHandler.saveMessage(messageJSON);
+			}
 			break;
 		default:
 			logger.info("unrecognized type of message, ignore" + message);
 			break;
+		}
+	}
+
+	public void reply(Session requester, List<JSONObject> records) {
+		JSONArray listJSONArray = new JSONArray();
+		for (JSONObject message : records) {
+			listJSONArray.add(message);
+		}
+		try {
+			requester.getBasicRemote().sendText(listJSONArray.toString());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			logger.info("requester " + requester.getId()
+					+ " meets unexpected error, records are "
+					+ listJSONArray.toString());
+			e.printStackTrace();
 		}
 	}
 

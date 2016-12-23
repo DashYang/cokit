@@ -13,6 +13,7 @@ function HistoryBuffer(owner) {
 		var opcnt = timestamp.opcnt;
 		var srn = timestamp.srn;
 		this.list[opcnt].timestamp.srn = srn;
+		return srn;
 	};
 	
 	/**
@@ -27,7 +28,7 @@ function HistoryBuffer(owner) {
 			if (srn == null) {   //first create
 				this.append(message);
 			} else {             //ack
-				this.acknowledge(message.timestamp);
+				srn = this.acknowledge(message.timestamp);
 			}
 		} else {   // other user's operation. always contains srn
 			this.append(message);
