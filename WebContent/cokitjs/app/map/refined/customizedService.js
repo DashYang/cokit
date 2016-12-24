@@ -26,19 +26,56 @@ function ItineraryPlanningService(owner, sender, sharedWorkSpace) {
 	this.owner = owner; // to denote the owner of service
 
 	/**
-	 * experient
+	 * experiment 1 local response time
 	 */
-	this.timers = new Array();
-
-	this.getTimerResult = function() {
-		if (this.timers.length <= 0)
+	this.responseTimers = new Array();
+	
+	this.getResponseTimerResult = function() {
+		if (this.responseTimers.length <= 0)
 			return;
-		var res = "";
-		for (index in this.timers) {
-			res += this.timers[index] + ',';
+		var res = "Total Response Time\n";
+		for (index in this.responseTimers) {
+			res += this.responseTimers[index] + ',';
 		}
 		console.log(res);
 	};
+	
+	/**
+	 * experiment 2 propagation delay time
+	 */
+	this.propagationTimers = new Array();
+	
+	this.getPropagationTimerResult = function() {
+		if (this.propagationTimers.length <= 0)
+			return;
+		var res = "Total Propagation Time\n";
+		for (index in this.propagationTimers) {
+			res += this.propagationTimers[index] + ',';
+		}
+		console.log(res);
+	};
+	/**
+	 * experiment 3 server performance
+	 */
+	this.ops = new Array();
+	this.mspo = new Array();
+	this.getServerPerformanceResult = function() {
+		if (this.ops.length <= 0)
+			return;
+		var res = "ops\n";
+		for (index in this.ops) {
+			res += this.ops[index] + ',';
+		}
+		console.log(res);
+		var res = "mspo\n";
+		for (index in this.mspo) {
+			res += this.mspo[index] + ',';
+		}
+		console.log(res);
+	};
+	/**
+	 * experient over 
+	 */
 	/**
 	 * side effect of deletePOI
 	 */
@@ -135,25 +172,32 @@ function ItineraryPlanningService(owner, sender, sharedWorkSpace) {
 		while (this.localHistoryBuffer.tail < this.localHistoryBuffer.getSize()) {
 			var message = this.localHistoryBuffer
 					.get(this.localHistoryBuffer.tail);
-			this.execute(message);
+//			this.execute(message);
 			this.localHistoryBuffer.tail += 1;
 			var cleanMessage = message.writeToMessage();
 			this.sender.broadcast(cleanMessage);
 		}
 
-		var beginngTimer = new Date().getTime();
+		var beginngTimer = new Date().getTime();   //experiment 1-1
 		if (this.remoteRunningState == true) {
 			while (this.remoteHistoryBuffer.tail < this.remoteHistoryBuffer
 					.getSize()) {
 				var message = this.remoteHistoryBuffer
 						.get(this.remoteHistoryBuffer.tail);
-				this.execute(message);
-				this.remoteHistoryBuffer.tail += 1;
+				//experiment 2-1
 				var currentTimer = new Date().getTime();
-				this.timers.push(currentTimer - beginngTimer);
+				this.propagationTimers.push(currentTimer - message.timestamp.localClock);
+				
+//				this.execute(message);
+				this.remoteHistoryBuffer.tail += 1;
+				//experiment 1-2
+				currentTimer = new Date().getTime();
+				this.responseTimers.push(currentTimer - beginngTimer);
 			}
 		}
-		this.getTimerResult();
+		this.getResponseTimerResult();   //experiment 1-3
+		this.getPropagationTimerResult();   //experiment 2-2
+		this.getServerPerformanceResult();  //experiment 3-1
 		// step 3
 		this.sharedWorkSpace.reflectPOI(this.POINodeMap);
 		this.sharedWorkSpace.reflectEdge(this.EdgeNodeMap);

@@ -13,11 +13,14 @@ import org.apache.log4j.PropertyConfigurator;
 public class DummManager {
 	
 	public static void main(String args[]) {
-		int concurrentUserNumber = 1;
+		PropertyConfigurator.configure("log4j.properties");
+		int concurrentUserNumber = 4;
+		int operationNumber = 100;
 		List<Thread> threads = new ArrayList<>();
 		for(int i = 0 ; i < concurrentUserNumber; i ++ ) {
-//			DummyUser du = new DummyUser(50, 0, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/map.jsp");
-			DummyUser du = new DummyUser(10, 0, 0, 0, 0, "robot" + i, "http://localhost:8081/cokit/traditionalmap.jsp");
+//			DummyUser du = new DummyUser(operationNumber, 0, 0, 0, 0, "robot" + i, "http://218.193.130.182/cokit/map.jsp");
+//			DummyUser du = new DummyUser(operationNumber, 0, 0, 0, 0, "robot" + i, "http://218.193.130.182/cokit/traditionalmap.jsp");
+			DummyUser du = new DummyUser(operationNumber, 0, 0, 0, 0, "robot" + i, "http://218.193.130.182/cokit/clientmap.jsp");
 			Thread thread = new Thread(du);
 			threads.add(thread);
 		}

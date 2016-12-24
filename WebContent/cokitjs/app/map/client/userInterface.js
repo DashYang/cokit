@@ -12,10 +12,14 @@ var itineraryplanningService = new ItineraryPlanningService(me, sender, sharedWo
 
 // fetch messages after 1s
 setInterval(fetchMessages, 1000);
+var fetchFlag = false;
 function fetchMessages() {
+	if(fetchFlag == true)
+		return;
 	var timestamp = itineraryplanningService.createLocalTimestamp();
 	var message = new RefinedMessage(null, timestamp);
 	sender.synchronizeMessages(message);
+	fetchFlag = true;
 }
 
 function onOpen() {
@@ -33,12 +37,14 @@ function onMessage(evt) {
 	
 	for(var index in cleanmessages) {
 		var cleanmessage = cleanmessages[index];
+		itineraryplanningService.ops.push(cleanmessage.ops);
+		itineraryplanningService.mspo.push(cleanmessage.mspo);
 		var message = new RefinedMessage(null,null);
 		message.readFromMessage(cleanmessage);
 		itineraryplanningService.receiveMessage(message);
 	}
 	itineraryplanningService.run();
-	
+	fetchFlag = false;
 	bindPOIClickEvent();
 	bindEdgeClickEvent();
 }

@@ -32,6 +32,8 @@ function fetchHistoryRecordCallBackFuncion(evt) {
 	
 	for(var index in cleanmessages) {
 		var cleanmessage = cleanmessages[index];
+		itineraryplanningService.ops.push(cleanmessage.ops);
+		itineraryplanningService.mspo.push(cleanmessage.mspo);
 		var message = new RefinedMessage(null,null);
 		message.readFromMessage(cleanmessage);
 		itineraryplanningService.receiveMessage(message);
@@ -58,6 +60,8 @@ function onMessage(evt) {
 		return;
 	}
 	var cleanmessage = JSON.parse(jsonMessage);
+	itineraryplanningService.ops.push(cleanmessage.ops);
+	itineraryplanningService.mspo.push(cleanmessage.mspo);
 	var message = new RefinedMessage(null,null);
 	message.readFromMessage(cleanmessage);
 	itineraryplanningService.receiveMessage(message);

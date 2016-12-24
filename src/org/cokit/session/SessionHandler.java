@@ -2,11 +2,14 @@ package org.cokit.session;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.websocket.CloseReason;
@@ -16,6 +19,7 @@ import javax.websocket.Session;
 import net.sf.json.JSONObject;
 
 import org.apache.log4j.Logger;
+import org.cokit.experiment.Parameter;
 import org.eclipse.jdt.internal.compiler.ast.ThisReference;
 
 import com.sun.corba.se.spi.orb.Operation;
@@ -24,12 +28,12 @@ public class SessionHandler {
 	private String cokey = "";
 
 	// map from siteId to session
-	private static final ConcurrentHashMap<String, Session> onlineUsers = new ConcurrentHashMap<String, Session>();
+	private final ConcurrentHashMap<String, Session> onlineUsers = new ConcurrentHashMap<String, Session>();
 	// server history buffer;
-	private static final List<JSONObject> messageLog = new ArrayList<>();
+	private final List<JSONObject> messageLog = new ArrayList<>();
 	
 	// handler global state
-	private static int globalState = 0;
+	private int globalState = 0;
 	
 	private static final Logger logger = Logger.getLogger(SessionHandler.class
 			.getName());
@@ -175,27 +179,36 @@ public class SessionHandler {
 	}
 	/**
 	 * support client pull's method to synchronize Messages
-	 * @param lastUpdateSrn
+	 * @param lastUpdateSRN
 	 * @return
 	 */
 	public List<JSONObject> synchronizeMessages(int lastUpdateSRN) {
 		logger.info("fetch " + this.cokey + " records");
-		List<JSONObject> result = this.messageLog.subList(lastUpdateSRN+1, globalState);
+		List<JSONObject> result = new ArrayList<>();
+		for(int i = lastUpdateSRN+1; i < globalState; i ++) {
+			JSONObject message = this.messageLog.get(i);
+			result.add(message);
+		}
 		return result;
 	}
 	
 	/**
 	 * experiment: to calculate the throughput rate of server
 	 */
-	public void getThroughputRate() {
+	public Parameter getThroughputRate() {
 		currentTime = new Date().getTime();
+		double operationPerSecond = 0.0;
+		double millisecondPerOperation = 0.0;
 		if(startTime == null) {
 			startTime = currentTime;
 		}
 		if(currentTime - startTime != 0) {
 			int operationNumber = messageLog.size();
-			logger.info("ops: " + 1000.0 * operationNumber / (currentTime - startTime));
+			operationPerSecond = 1000.0 * operationNumber / (currentTime - startTime);
+			millisecondPerOperation = 1.0 * (currentTime - startTime) / operationNumber;
 		}
+		logger.warn(operationPerSecond + " " + millisecondPerOperation);
+		return new Parameter(operationPerSecond, millisecondPerOperation);
 	}
 	
 	public String toString() {

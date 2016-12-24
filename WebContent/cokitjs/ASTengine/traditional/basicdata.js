@@ -79,7 +79,8 @@ function TraditionalMessage(traditionalOperation, timestamp) {
 	this.readFromMessage = function (message) {
 		this.traditionalOperation = new TraditionalOperation(message.traditionalOperation.type, message.traditionalOperation.index, 
 				message.traditionalOperation.data);
-		this.timestamp = new Timestamp(message.timestamp.srn, message.timestamp.opcnt , message.timestamp.user , message.timestamp.lastUpdateSRN);
+		this.timestamp = new Timestamp(null, null, null,null);
+		this.timestamp.readFromMessage(message.timestamp);
 	};
 }
 

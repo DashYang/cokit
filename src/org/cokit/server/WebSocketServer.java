@@ -12,6 +12,7 @@ import javax.websocket.server.ServerEndpoint;
 
 import org.apache.log4j.Logger;
 import org.cokit.data.ActionType;
+import org.cokit.experiment.Parameter;
 import org.cokit.session.SessionHandler;
 import org.cokit.session.SessionPool;
 
@@ -30,7 +31,8 @@ public class WebSocketServer {
 	// map from session.id to cokey
 	private static final ConcurrentHashMap<String, String> registerTable = new ConcurrentHashMap<String, String>();
 	
-	
+	private static final Object broadcastLock = new Object(); 
+	private static final Object	syncrhonizedLock = new Object(); 
 	/**
 	 * @OnOpen allows us to intercept the creation of a new session. The session
 	 *         class allows us to send data to the user. In the method onOpen,
@@ -107,10 +109,13 @@ public class WebSocketServer {
 			
 			//avoid the disorder of broadcasting messages
 			timestampJSON = messageJSON.getJSONObject("timestamp");
-			synchronized (sessionHandler) {
+			synchronized (broadcastLock) {
 				logger.info(sessionHandler.toString() + " handles this request");
 				timestampJSON = sessionHandler.completeTimestamp(timestampJSON);
 				messageJSON.element("timestamp", timestampJSON);
+				Parameter parameter = sessionHandler.getThroughputRate();
+				messageJSON.element("ops", parameter.getOperationPerSecondStr());
+				messageJSON.element("mspo", parameter.getMillisecondPerOperationStr());
 				// broadcast new message
 				sessionHandler.broadcastToAll(messageJSON.toString());
 
@@ -125,20 +130,22 @@ public class WebSocketServer {
 			// server completer timestamp
 			timestampJSON = messageJSON.getJSONObject("timestamp");
 			int lastUpdateSRN = timestampJSON.getInt("lastUpdateSRN");
-			synchronized (sessionHandler) {
+			synchronized (syncrhonizedLock) {
 				logger.info(sessionHandler.toString() + " handles this request");
 				// fetch history message records
 				List<JSONObject> histroyRecords = sessionHandler
 					.synchronizeMessages(lastUpdateSRN);
-				reply(session, histroyRecords);
 				
 				if(messageJSON.getJSONObject("refinedOperation") != null && !messageJSON.getJSONObject("refinedOperation").toString().equals("null")) {
-					logger.info(messageJSON.getJSONObject("refinedOperation").toString());
 					timestampJSON = sessionHandler.completeTimestamp(timestampJSON);
 					messageJSON.element("timestamp", timestampJSON);
+					Parameter parameter = sessionHandler.getThroughputRate();
+					messageJSON.element("ops", parameter.getOperationPerSecondStr());
+					messageJSON.element("mspo", parameter.getMillisecondPerOperationStr());
 					sessionHandler.saveMessage(messageJSON);
-					sessionHandler.getThroughputRate();
+					histroyRecords.add(messageJSON);
 				}
+				reply(session, histroyRecords);
 			}
 			break;
 		default:

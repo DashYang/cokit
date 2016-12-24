@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -47,6 +48,7 @@ public class DummyUser implements Runnable{
 		System.setProperty("webdriver.chrome.driver",
 				"C:/Users/dash/Downloads/chromedriver_win32/chromedriver.exe");
 		driver = new ChromeDriver();
+		logger.setLevel(Level.INFO);
 		System.out.println("fetchURL " + completeUrl);
 		driver.get(completeUrl);
 	}
@@ -64,7 +66,7 @@ public class DummyUser implements Runnable{
 		driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
 		for (int i = 0; i < addPOI; i++) {
 			appendPOI();
-			System.out.println("execute the " + i + " operation");
+			logger.info("execute the " + i + " operation");
 			sleep(sleepTime);
 		}
 		for (int i = 0; i < addLine; i++) {
@@ -105,21 +107,9 @@ public class DummyUser implements Runnable{
 	}
 
 	private void appendPOI() {
-		Random random = new Random();
-		List<WebElement> insertButtons = driver.findElements(By
-				.cssSelector(".insertPOIbutton"));
-		int POIIndex = random.nextInt(POIList.length);
-		int TabIndex = random.nextInt(insertButtons.size());
-		
-		WebElement insertButton = insertButtons.get(TabIndex);
-		String name = POIList[POIIndex];
-		String preId = insertButton.getAttribute("id").substring(1);
-		String exstr = String.format("addPOI('%s', '%s', '%s\')", preId, name, "addPOI");
-		
+		String exstr = String.format("addPOI('%s', '%s', '%s\')", "0", "fudan", "addPOI");
 		logger.info(exstr);
 		((JavascriptExecutor)driver).executeScript(exstr);
-		
-		
 	}
 
 	private void deletePOI() {

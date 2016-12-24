@@ -86,7 +86,8 @@ function RefinedMessage(refinedOperation, timestamp) {
 	this.readFromMessage = function(message) {
 		this.refinedOperation = new RefinedOperation(message.refinedOperation.type, message.refinedOperation.targetId,
 				message.refinedOperation.data);
-		this.timestamp = new Timestamp(message.timestamp.srn, message.timestamp.opcnt , message.timestamp.user , message.timestamp.lastUpdateSRN);
+		this.timestamp = new Timestamp(null, null, null,null);
+		this.timestamp.readFromMessage(message.timestamp);
 	};
 }
 
