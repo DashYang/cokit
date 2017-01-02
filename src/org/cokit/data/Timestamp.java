@@ -1,5 +1,7 @@
 package org.cokit.data;
 
+import net.sf.json.JSONObject;
+
 /**
  * 
  * @author dash
@@ -8,69 +10,72 @@ package org.cokit.data;
  */
 public class Timestamp {
 	//important and necessary
-	private int globalState;       // server receives an operation and assigned a continuous number
-	private int localState;        // local generates an operation and assigned a continuous number
-	private String siteId;         // the identifier of client site
-	private int lastUpdateState;   // latest remote operation's globalState
+	private int srn;       // server receives an operation and assigned a continuous number
+	private int opcnt;        // local generates an operation and assigned a continuous number
+	private String user;         // the identifier of client site
+	private int lastUpdateSRN;   // latest remote operation's globalState
 	
 	//in addition not necessary
-	private Timestamp globalClock;  // use real timestamp to represent globalState
-	private Timestamp localClock;   // use real timestamp to represent localState
+	private long localClock;  // use real timestamp to represent globalState
+	private long globalClock;   // use real timestamp to represent localState
 	
-	public Timestamp(int globalState, int localState, String siteId, int lastUpdateState) {
-		this.globalState = globalState;
-		this.localState = localState;
-		this.siteId = siteId;
-		this.lastUpdateState = lastUpdateState;
-	}
-	
-	public Timestamp(int globalState, int localState, String siteId, int lastUpdateState,
-			Timestamp globalClock, Timestamp localClock) {
-		this.globalState = globalState;
-		this.localState = localState;
-		this.siteId = siteId;
-		this.lastUpdateState = lastUpdateState;
-		
-		this.globalClock = globalClock;
+	public Timestamp(int srn, int opcnt, String user, int lastUpdateSRN,
+			long localClock, long globalClock) {
+		super();
+		this.srn = srn;
+		this.opcnt = opcnt;
+		this.user = user;
+		this.lastUpdateSRN = lastUpdateSRN;
 		this.localClock = localClock;
+		this.globalClock = globalClock;
 	}
 	
-	public int getGlobalState() {
-		return globalState;
+	public JSONObject writeToJSON() {
+		JSONObject JSONtimstamp = new JSONObject();
+		JSONtimstamp.element("srn", srn);
+		JSONtimstamp.element("opcnt", opcnt);
+		JSONtimstamp.element("user", user);
+		JSONtimstamp.element("lastUpdateSRN", lastUpdateSRN);
+		
+		JSONtimstamp.element("localClock", localClock);
+		JSONtimstamp.element("globalClock", globalClock);
+		return JSONtimstamp;
 	}
-	public void setGlobalState(int globalState) {
-		this.globalState = globalState;
+	public int getSrn() {
+		return srn;
 	}
-	public int getLocalState() {
-		return localState;
+	public void setSrn(int srn) {
+		this.srn = srn;
 	}
-	public void setLocalState(int localState) {
-		this.localState = localState;
+	public int getOpcnt() {
+		return opcnt;
 	}
-	public String getSiteId() {
-		return siteId;
+	public void setOpcnt(int opcnt) {
+		this.opcnt = opcnt;
 	}
-	public void setSiteId(String siteId) {
-		this.siteId = siteId;
+	public String getUser() {
+		return user;
 	}
-	public int getLastUpdateState() {
-		return lastUpdateState;
+	public void setUser(String user) {
+		this.user = user;
 	}
-	public void setLastUpdateState(int lastUpdateState) {
-		this.lastUpdateState = lastUpdateState;
+	public int getLastUpdateSRN() {
+		return lastUpdateSRN;
 	}
-	public Timestamp getGlobalClock() {
+	public void setLastUpdateSRN(int lastUpdateSRN) {
+		this.lastUpdateSRN = lastUpdateSRN;
+	}
+	public long getGlobalClock() {
 		return globalClock;
 	}
-	public void setGlobalClock(Timestamp globalClock) {
+	public void setGlobalClock(long globalClock) {
 		this.globalClock = globalClock;
 	}
-	public Timestamp getLocalClock() {
+	public long getLocalClock() {
 		return localClock;
 	}
-	public void setLocalClock(Timestamp localClock) {
+	public void setLocalClock(long localClock) {
 		this.localClock = localClock;
 	}
-	
 	
 }
