@@ -1,4 +1,4 @@
-package org.cokit.data.refined;
+package org.cokit.data.improved;
 
 import net.sf.json.JSONObject;
 

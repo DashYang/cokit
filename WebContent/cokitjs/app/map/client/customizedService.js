@@ -175,7 +175,7 @@ function ItineraryPlanningService(owner, sender, sharedWorkSpace) {
 		while (this.localHistoryBuffer.tail < this.localHistoryBuffer.getSize()) {
 			var message = this.localHistoryBuffer
 					.get(this.localHistoryBuffer.tail);
-//			this.execute(message);
+			this.execute(message);
 			this.localHistoryBuffer.tail += 1;
 			var cleanMessage = message.writeToMessage();
 			this.sender.synchronizeMessages(cleanMessage);
@@ -192,7 +192,7 @@ function ItineraryPlanningService(owner, sender, sharedWorkSpace) {
 				var currentTimer = new Date().getTime();
 				this.propagationTimers.push(currentTimer - message.timestamp.localClock);
 				
-//				this.execute(message);
+				this.execute(message);
 				this.remoteHistoryBuffer.tail += 1;
 				//experiment 1-2
 				currentTimer = new Date().getTime();

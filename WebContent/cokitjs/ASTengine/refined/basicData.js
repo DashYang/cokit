@@ -80,6 +80,8 @@ function RefinedMessage(refinedOperation, timestamp) {
 	};
 	
 	this.writeToMessage = function(){
+		if(this.refinedOperation == null)
+			return {refinedOperation: null, timestamp: this.timestamp.writeToMessage()};
 		return {refinedOperation: this.refinedOperation.writeToMessage(), timestamp: this.timestamp.writeToMessage()};
 	};
 	

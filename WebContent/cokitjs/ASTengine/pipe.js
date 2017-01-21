@@ -57,5 +57,46 @@ function Sender(project, serviceName, cokey,
 	
 	this.bindOnMessageCallBackFunction = function( callbackFunction ) {
 		this.ws.onmessage = callbackFunction;
-	}
+	};
 }
+
+function HttpSender(project, serviceName, cokey,
+		openCallBackFunction,
+		receiveMessageCallBackFunction,
+		closeCallBackFunction) {
+	
+	//var serviceURL = "/cokit/CoKitServer";
+	this.serviceName = serviceName;
+	this.serviceURL = "/" + project + "/" + serviceName;
+	this.cokey = cokey;
+	
+	this.handleMessageFunction = receiveMessageCallBackFunction;
+	
+	this.send = function(message) {
+		var handleMessageFunction = this.handleMessageFunction;
+		$.ajax({
+			type : "post",// request type
+			url : "./" + this.serviceName, // request URL
+			dataType : "json",// data type
+			data : {
+				message : JSON.stringify(message),
+				sessionId : me
+			},
+			success : function(jsonData) {
+				handleMessageFunction(jsonData);
+			}
+		});
+	};
+	
+	this.synchronizeMessages = function(message) {
+		message.cokey = this.cokey;
+		message.action = "SYNCHRONIZATION";
+		this.send(message);
+	};
+	
+	this.bindOnMessageCallBackFunction = function( callbackFunction ) {
+		this.handleMessageFunction = callbackFunction;
+	};
+}
+
+

@@ -13,7 +13,8 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 
 /**
- * @author dash
+ * dummy web user(selenium)
+ * @author dash 
  * @version 1.0 date 2016-12-17
  * @since JDK1.6
  */

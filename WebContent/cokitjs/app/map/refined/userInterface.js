@@ -59,12 +59,14 @@ function onMessage(evt) {
 		sender.login();
 		return;
 	}
-	var cleanmessage = JSON.parse(jsonMessage);
-	itineraryplanningService.ops.push(cleanmessage.ops);
-	itineraryplanningService.mspo.push(cleanmessage.mspo);
-	var message = new RefinedMessage(null,null);
-	message.readFromMessage(cleanmessage);
-	itineraryplanningService.receiveMessage(message);
+	var cleanmessages = JSON.parse(jsonMessage);
+	
+	for(var index in cleanmessages) {
+		var cleanmessage = cleanmessages[index];
+		var message = new RefinedMessage(null,null);
+		message.readFromMessage(cleanmessage);
+		itineraryplanningService.receiveMessage(message);
+	}
 	itineraryplanningService.run();
 	
 	bindPOIClickEvent();

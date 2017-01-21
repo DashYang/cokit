@@ -5,7 +5,7 @@
 var me = getUrlParam("user");
 var cokey = "itineraryplanning-clientpull";
 
-var sender = new Sender("cokit", "CoKitServer", cokey, null, onMessage, null);
+var sender = new HttpSender("cokit", "HttpServer", cokey, null, onMessage, null);
 
 var sharedWorkSpace = new itineraryPlanningWorkSpace();
 var itineraryplanningService = new ItineraryPlanningService(me, sender, sharedWorkSpace);
@@ -18,6 +18,7 @@ function fetchMessages() {
 		return;
 	var timestamp = itineraryplanningService.createLocalTimestamp();
 	var message = new RefinedMessage(null, timestamp);
+	message = message.writeToMessage();
 	sender.synchronizeMessages(message);
 	fetchFlag = true;
 }
@@ -26,27 +27,29 @@ function onOpen() {
 	console.log("open");
 }
 
-function onMessage(evt) {
-	var jsonMessage = evt.data;
-	if(jsonMessage == "Connection Established") {
-		sender.isReady = true;
-		sender.login();
-		return;
-	}
-	var cleanmessages = JSON.parse(jsonMessage);
-	
-	for(var index in cleanmessages) {
-		var cleanmessage = cleanmessages[index];
-		itineraryplanningService.ops.push(cleanmessage.ops);
-		itineraryplanningService.mspo.push(cleanmessage.mspo);
-		var message = new RefinedMessage(null,null);
-		message.readFromMessage(cleanmessage);
-		itineraryplanningService.receiveMessage(message);
-	}
-	itineraryplanningService.run();
+function onMessage(jsonMessage) {
 	fetchFlag = false;
-	bindPOIClickEvent();
-	bindEdgeClickEvent();
+	
+	if(jsonMessage.state != "ok")
+		return;
+	
+	if(jsonMessage.type == "SYNCHRONIZATION") {
+		if(jsonMessage.size == 0)
+			return;
+		var items = jsonMessage.result;
+		for(var index in items) {
+			var cleanmessage = items[index];
+			var message = new RefinedMessage(null,null);
+			message.readFromMessage(cleanmessage);
+			itineraryplanningService.receiveMessage(message);
+		}
+		itineraryplanningService.run();
+		fetchFlag = false;
+		bindPOIClickEvent();
+		bindEdgeClickEvent();
+	} else if (jsonMessage.type == "EXPERIMENTRESULT") {
+		
+	}
 }
 
 //init the app

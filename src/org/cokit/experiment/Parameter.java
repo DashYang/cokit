@@ -9,9 +9,11 @@ import org.openqa.selenium.internal.selenesedriver.GetActiveElement;
  * @version 1.0 date 2016-12-24
  * @since JDK1.6
  */
+
 public class Parameter {
 	private double operationPerSecond = 0.0;
 	private double millisecondPerOperation = 0.0;
+	private long elapseTime = 0;
 	private DecimalFormat df =new DecimalFormat("#####0.00");
 	
 	public double getOperationPerSecond() {

@@ -4,14 +4,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 public class SessionPool {
-	private static final Logger logger = Logger.getLogger(SessionPool.class
-			.getName());
+	private Logger logger = null;
 	private static SessionPool singleton = null;
 	// map from cokey to sessionHaandler
-	private static final ConcurrentHashMap<String, SessionHandler> sessionPool = new ConcurrentHashMap<String, SessionHandler>();
+	private ConcurrentHashMap<String, SessionHandler> sessionPool = null;
 
 	private SessionPool() {
-
+		logger = Logger.getLogger(SessionPool.class.getName());
+		sessionPool = new ConcurrentHashMap<String, SessionHandler>();
 	}
 
 	public static SessionPool newInstance() {
@@ -41,7 +41,7 @@ public class SessionPool {
 		return sessionPool.get(cokey);
 	}
 
-	public void removeSessionHandler(String cokey) {
+	public synchronized void removeSessionHandler(String cokey) {
 		SessionHandler sessionhandler = sessionPool.get(cokey);
 
 		// close all connections of this session

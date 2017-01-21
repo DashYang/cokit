@@ -16,9 +16,12 @@ import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.Session;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.apache.log4j.Logger;
+import org.cokit.data.MessageQueue;
+import org.cokit.data.improved.ServerMessageQueue;
 import org.cokit.experiment.Parameter;
 import org.eclipse.jdt.internal.compiler.ast.ThisReference;
 
@@ -28,23 +31,14 @@ public class SessionHandler {
 	private String cokey = "";
 
 	// map from siteId to session
-	private final ConcurrentHashMap<String, Session> onlineUsers = new ConcurrentHashMap<String, Session>();
+	private final ConcurrentHashMap<String, SessionProxy> onlineUsers = new ConcurrentHashMap<String, SessionProxy>();
 	// server history buffer;
-	private final List<JSONObject> messageLog = new ArrayList<>();
-	
-	// handler global state
-	private int globalState = 0;
-	
+	private final MessageQueue<JSONObject> operationMessageQueue = new ServerMessageQueue<>();
+
 	private static final Logger logger = Logger.getLogger(SessionHandler.class
 			.getName());
-	
-	
-	/**
-	 * server throughput rate experiment 
-	 */
-	private Long startTime = null;
-	private Long currentTime = null;
-	
+
+
 	public String getCokey() {
 		return cokey;
 	}
@@ -52,7 +46,7 @@ public class SessionHandler {
 	public void setCokey(String cokey) {
 		this.cokey = cokey;
 	}
-	
+
 	public SessionHandler(String cokey) {
 		this.setCokey(cokey);
 
@@ -64,46 +58,33 @@ public class SessionHandler {
 	 * @param session
 	 */
 	public void addSession(String siteId, Session session) {
-		onlineUsers.put(siteId, session);
+		SessionProxy sessionProxy = new SessionProxy(session);
+		logger.info(session.getId() + " join " + cokey);
+		onlineUsers.put(siteId, sessionProxy);
 	}
-	
+
 	/**
-	 * assign a global state for message
-	 * @return handler global state 
-	 */
-	public synchronized int assignHandlerGlobalState() {
-		return globalState++;
-	}
-	
-	
-	/**
-	 * 
-	 * @return timestamp
-	 */
-	public String getGlobalClock() {
-		Date nowDate = new Date();
-		String newTime = String.valueOf(nowDate.getTime());
-		return newTime;
-	}
-	
-	/**
-	 * broad operation to all users who share the same sessionId it's better to
+	 * broad message to all users who share the same sessionId it's better to
 	 * use a message queue
 	 * 
 	 * @param message
-	 * return to client site
+	 *            return to client site
 	 */
-	public synchronized void broadcastToAll(String message) {
+	public void broadcastToAll(String message) {
 		logger.info("broadcast message " + message);
 		Set<String> abnormalSessions = new HashSet<String>();
 		logger.info("broadcast user number: " + onlineUsers.keySet().size());
 		for (String siteId : onlineUsers.keySet()) {
 			try {
-				Session user = onlineUsers.get(siteId);
-				if(user.isOpen())
-					user.getBasicRemote().sendText(message);
-				else
-					abnormalSessions.add(siteId);
+				SessionProxy proxy = onlineUsers.get(siteId);
+				Session user = proxy.getSession();
+				synchronized (proxy.sessionLock) {
+					if (user.isOpen())
+						user.getBasicRemote().sendText(message);
+					else
+						abnormalSessions.add(siteId);
+				}
+
 			} catch (IOException e) {
 				logger.info(siteId + " encounter an IO problem, terminte");
 				abnormalSessions.add(siteId);
@@ -120,7 +101,7 @@ public class SessionHandler {
 				"try it later");
 		for (String siteId : abnormalSessions) {
 			try {
-				Session user = onlineUsers.get(siteId);
+				Session user = onlineUsers.get(siteId).getSession();
 				user.close(cr);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -128,8 +109,72 @@ public class SessionHandler {
 			}
 			onlineUsers.remove(siteId);
 		}
-		
+
 		logger.info("broadcast message complete");
+	}
+
+	/**
+	 * broad operation to all users who share the same sessionId it's better to
+	 * use a message queue
+	 * 
+	 * @param message
+	 *            return to client site
+	 */
+	public void broadcastOperationsToAll() {
+//		logger.info("broadcast operations ");
+		Set<String> abnormalSessions = new HashSet<String>();
+//		logger.info("broadcast user number: " + onlineUsers.keySet().size());
+		
+		JSONObject resultJSON = new JSONObject();
+		resultJSON.element("state", "OK");
+		resultJSON.element("action", "BROADCAST");
+		
+		for (String siteId : onlineUsers.keySet()) {
+			boolean isOpen = true;
+			try {
+				SessionProxy proxy = onlineUsers.get(siteId);
+				Session user = proxy.getSession();
+				synchronized (proxy.sessionLock) {
+					if (user.isOpen() && isOpen) {
+						int fetchIndex = proxy.getFetchIndex();
+						List<JSONObject> messages = operationMessageQueue.getListFromIndex(proxy.getFetchIndex());
+						if(messages.size() == 0) continue;   //empty, continue
+						resultJSON.element("result", messages);
+						user.getBasicRemote().sendText(resultJSON.toString());
+						
+						proxy.setFetchIndex(fetchIndex + messages.size());
+					}
+					else
+						abnormalSessions.add(siteId);
+				}
+			} catch (IOException e) {
+				logger.info(siteId + " encounter an IO problem, terminte");
+				isOpen = false;
+				abnormalSessions.add(siteId);
+				e.printStackTrace();
+			} catch (Exception e) {
+				logger.info(siteId + " encounter other problem, terminte");
+				isOpen = false;
+				abnormalSessions.add(siteId);
+				e.printStackTrace();
+			}
+		}
+
+		// terminiate abnormal session, it better use 'while'
+		CloseReason cr = new CloseReason(CloseCodes.CANNOT_ACCEPT,
+				"try it later");
+		for (String siteId : abnormalSessions) {
+			try {
+				Session user = onlineUsers.get(siteId).getSession();
+				user.close(cr);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			onlineUsers.remove(siteId);
+		}
+
+//		logger.info("broadcast message complete");
 	}
 
 	public synchronized void closeAllConnections() {
@@ -137,18 +182,18 @@ public class SessionHandler {
 		CloseReason cr = new CloseReason(CloseCodes.GOING_AWAY, "done!");
 		for (String siteId : onlineUsers.keySet()) {
 			try {
-				Session user = onlineUsers.get(siteId);
+				Session user = onlineUsers.get(siteId).getSession();
 				user.close(cr);
 			} catch (IOException e) {
 			}
 		}
 		onlineUsers.clear();
 	}
-	
+
 	public void closeConnection(String siteId) {
 		if (onlineUsers.contains(siteId)) {
 			CloseReason cr = new CloseReason(CloseCodes.GOING_AWAY, "done!");
-			Session user = onlineUsers.get(siteId);
+			Session user = onlineUsers.get(siteId).getSession();
 			try {
 				user.close(cr);
 				removeConnection(siteId);
@@ -159,58 +204,32 @@ public class SessionHandler {
 			logger.info("close connection " + siteId);
 		}
 	}
-	
+
 	public void removeConnection(String siteId) {
 		onlineUsers.remove(siteId);
 	}
-	
-	
-	public JSONObject completeTimestamp(JSONObject timestamp) {
-		int globalState = assignHandlerGlobalState();
-		String globalClock = getGlobalClock();
-		timestamp.element("srn", globalState);
-		timestamp.element("globalClock", globalClock);
-		return timestamp;
-	}
-	
+
 	public void saveMessage(JSONObject message) {
-		logger.info(this.cokey + " handler saves message : " + message.toString());
-		messageLog.add(message);
+//		logger.info(this.cokey + " handler saves message : "
+//				+ message.toString());
+		List<JSONObject> messages = new ArrayList<>();
+		messages.add(message);
+		operationMessageQueue.produce(messages);
 	}
+
 	/**
 	 * support client pull's method to synchronize Messages
+	 * 
 	 * @param lastUpdateSRN
 	 * @return
 	 */
 	public List<JSONObject> synchronizeMessages(int lastUpdateSRN) {
-		logger.info("fetch " + this.cokey + " records");
-		List<JSONObject> result = new ArrayList<>();
-		for(int i = lastUpdateSRN+1; i < globalState; i ++) {
-			JSONObject message = this.messageLog.get(i);
-			result.add(message);
-		}
+		logger.info("fetch " + this.cokey + " records from " + lastUpdateSRN);
+		List<JSONObject> result = operationMessageQueue.getListFromIndex(lastUpdateSRN);
+		logger.info("total " + result.size() + " items are fetched");
 		return result;
 	}
-	
-	/**
-	 * experiment: to calculate the throughput rate of server
-	 */
-	public Parameter getThroughputRate() {
-		currentTime = new Date().getTime();
-		double operationPerSecond = 0.0;
-		double millisecondPerOperation = 0.0;
-		if(startTime == null) {
-			startTime = currentTime;
-		}
-		if(currentTime - startTime != 0) {
-			int operationNumber = messageLog.size();
-			operationPerSecond = 1000.0 * operationNumber / (currentTime - startTime);
-			millisecondPerOperation = 1.0 * (currentTime - startTime) / operationNumber;
-		}
-		logger.warn(operationPerSecond + " " + millisecondPerOperation);
-		return new Parameter(operationPerSecond, millisecondPerOperation);
-	}
-	
+
 	public String toString() {
 		return this.cokey;
 	}
