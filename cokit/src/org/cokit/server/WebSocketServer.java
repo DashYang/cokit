@@ -14,7 +14,6 @@ import javax.websocket.server.ServerEndpoint;
 import net.sf.json.JSONArray;
 import org.apache.log4j.Logger;
 import org.cokit.data.ActionType;
-import org.cokit.experiment.Prometheus;
 import org.cokit.session.SessionHandler;
 import org.cokit.session.SessionPool;
 
@@ -26,7 +25,6 @@ import net.sf.json.JSONObject;
 @ServerEndpoint(value = "/CoKitServer")
 public class WebSocketServer {
     private SessionPool sessionPool = null; //handle session
-    private Prometheus prometheus = null;   //experiment
 
     private static final Logger logger = Logger.getLogger(WebSocketServer.class
             .getName());
@@ -57,9 +55,6 @@ public class WebSocketServer {
      */
     @OnMessage
     public void onMessage(String message, Session session) {
-        //experiment begin
-        long startTime = new Date().getTime();
-        long endTime = startTime;
 //		logger.info("Message from " + session.getId() + ": " + message);
         JSONObject messageJSON = JSONObject.fromObject(message);
 
@@ -75,7 +70,6 @@ public class WebSocketServer {
         }
 
         this.sessionPool = SessionPool.newInstance();
-        this.prometheus = Prometheus.newInstance();
 
         sessionPool.addSessionHandler(cokey);
 
@@ -97,8 +91,6 @@ public class WebSocketServer {
                 sessionHandler.saveMessages(messageList);
                 sessionHandler.broadcastOperationsToAll();
 
-                endTime = new Date().getTime();
-                prometheus.add(startTime, endTime);
                 break;
             case FETCH:
                 sessionHandler = sessionPool.getSessionHandler(cokey);
@@ -138,14 +130,8 @@ public class WebSocketServer {
                     reply(session, resultJSON);
                     currentIndex += interval;
                 }
-                //only not empty operation should consider
-                if (isEmpty == false) {
-                    endTime = new Date().getTime();
-                    prometheus.add(startTime, endTime);
-                }
                 break;
             case EXPERIMENTRESULT:
-                replyExperimentResult(session);
                 break;
             case SERVERPERFORMANCE:
                 logger.info("evaluate server's performance begin");
@@ -192,31 +178,6 @@ public class WebSocketServer {
         }
     }
 
-    public void replyExperimentResult(Session requester) {
-        JSONObject resultJSON = new JSONObject();
-        List<Integer> opsList = prometheus.getOperationPerSecond();
-        List<Long> mspoList = prometheus.getOperationElapseTime();
-        List<Integer> arriveOpList = prometheus.getOperationArrivedSecond();
-
-        logger.info(opsList);
-        logger.info(mspoList);
-        logger.info(arriveOpList);
-
-        resultJSON.element("state", "EXPERIMENTRESULT");
-        resultJSON.element("action", "EXPERIMENTRESULT");
-        resultJSON.element("OperationPerSecond", opsList);
-        resultJSON.element("OperationArrivedSecond", arriveOpList);
-
-        try {
-            logger.info("reply \n" + resultJSON.toString());
-            requester.getBasicRemote().sendText(resultJSON.toString());
-        } catch (IOException e) {
-            logger.info("requester " + requester.getId()
-                    + " meets unexpected error, records are "
-                    + resultJSON.toString());
-            e.printStackTrace();
-        }
-    }
 
     /**
      * The user closes the connection.
