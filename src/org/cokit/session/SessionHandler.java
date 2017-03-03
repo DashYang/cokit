@@ -33,7 +33,7 @@ public class SessionHandler {
 	// map from siteId to session
 	private final ConcurrentHashMap<String, SessionProxy> onlineUsers = new ConcurrentHashMap<String, SessionProxy>();
 	// server history buffer;
-	private final MessageQueue<JSONObject> operationMessageQueue = new ServerMessageQueue<>();
+	private final MessageQueue<JSONObject> operationMessageQueue = new ServerMessageQueue<JSONObject>();
 
 	private static final Logger logger = Logger.getLogger(SessionHandler.class
 			.getName());
@@ -117,8 +117,7 @@ public class SessionHandler {
 	 * broad operation to all users who share the same sessionId it's better to
 	 * use a message queue
 	 * 
-	 * @param message
-	 *            return to client site
+	 * return to client site
 	 */
 	public void broadcastOperationsToAll() {
 //		logger.info("broadcast operations ");
@@ -210,13 +209,21 @@ public class SessionHandler {
 	}
 
 	public void saveMessage(JSONObject message) {
-//		logger.info(this.cokey + " handler saves message : "
-//				+ message.toString());
-		List<JSONObject> messages = new ArrayList<>();
+		logger.info(this.cokey + " handler saves message : "
+				+ message.toString());
+		//empty message, ignore
+		if(message.get("refinedOperation") == null) {
+			logger.info("empty message, ignore");
+			return;
+		}
+		List<JSONObject> messages = new ArrayList<JSONObject>();
 		messages.add(message);
 		operationMessageQueue.produce(messages);
 	}
 
+	public void saveMessages(JSONArray messages) {
+		operationMessageQueue.produce(messages);
+	}
 	/**
 	 * support client pull's method to synchronize Messages
 	 * 

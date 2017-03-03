@@ -5,9 +5,7 @@ import java.io.PrintWriter;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -16,14 +14,12 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.websocket.Session;
 
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.apache.log4j.Logger;
 import org.cokit.data.ActionType;
-import org.cokit.experiment.Parameter;
 import org.cokit.session.SessionHandler;
 import org.cokit.session.SessionPool;
 
@@ -43,7 +39,6 @@ public class HttpServer extends HttpServlet {
 	 */
 	private AtomicLong totalExecuteTime = new AtomicLong(0);
 	private AtomicInteger totalRequestNumber = new AtomicInteger(0);
-	private static final List<Parameter> experimentResult = new Vector<>();
 
 	/**
 	 * @see HttpServlet#HttpServlet()
@@ -115,7 +110,6 @@ public class HttpServer extends HttpServlet {
 			break;
 		case EXPERIMENTRESULT:
 			resultJSON.element("type", "EXPERIMENTRESULT");
-			resultJSON.element("result", replyExperimentResult());
 			break;
 		default:
 			resultJSON.element("state", "unknown");
@@ -142,29 +136,6 @@ public class HttpServer extends HttpServlet {
 		this.doGet(request, response);
 	}
 	
-	
-	public String replyExperimentResult() {
-		JSONArray listJSONArray = new JSONArray();
-		List<String> opsList = new LinkedList();
-		List<String> mspoList = new LinkedList();
-		logger.info("experiment size " + experimentResult.size());
-		for(Parameter parameter : experimentResult) {
-			JSONObject parameterJson = new JSONObject();
-			String ops = parameter.getOperationPerSecondStr();
-			String mspo = parameter.getMillisecondPerOperationStr();
-			opsList.add(ops);
-			mspoList.add(mspo);
-			parameterJson.element("ops", ops);
-			parameterJson.element("mspo", mspo);
-		}
-		logger.info(opsList);
-		logger.info(mspoList);
-		listJSONArray.add(opsList);
-		listJSONArray.add(mspoList);
-		
-		return listJSONArray.toString();
-	}
-	
 	private void checkExperimentResult(long startTime) {
 		//experiment end
 		long endTime = new Date().getTime();
@@ -176,8 +147,6 @@ public class HttpServer extends HttpServlet {
 					/ totalExecuteTime.get();
 			double millisecondPerOperation = 1.0 * totalExecuteTime.get()
 					/ totalRequestNumber.get();
-			Parameter parameter = new Parameter(operationPerSecond, millisecondPerOperation);
-			experimentResult.add(parameter);
 			logger.info(totalRequestNumber.get() + " " + totalExecuteTime.get() + " " + differential);
 		}
 	}

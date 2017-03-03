@@ -81,14 +81,14 @@
 </body>
 </html>
 <!-- AST-Engine:necessary js file -->
-<script type="text/javascript" src="./cokitjs/util/tools.js"></script>
-<script type="text/javascript" src="./cokitjs/ASTengine/timestamp.js"></script>
-<script type="text/javascript" src="./cokitjs/ASTengine/core/basicData.js"></script>
-<script type="text/javascript" src="./cokitjs/ASTengine/historyBuffer.js"></script>
-<script type="text/javascript" src="./cokitjs/ASTengine/workflow.js"></script>
-<script type="text/javascript" src="./cokitjs/ASTengine/pipe.js"></script>
-<script type="text/javascript" src="./cokitjs/ASTengine/core/ASTEngine.js"></script>
+<script type="text/javascript" src="cokitjs/util/tools.js"></script>
+<script type="text/javascript" src="cokitjs/ASTengine/timestamp.js"></script>
+<script type="text/javascript" src="cokitjs/ASTengine/core/basicData.js"></script>
+<script type="text/javascript" src="cokitjs/ASTengine/historyBuffer.js"></script>
+<script type="text/javascript" src="cokitjs/ASTengine/workflow.js"></script>
+<script type="text/javascript" src="cokitjs/ASTengine/pipe.js"></script>
+<script type="text/javascript" src="cokitjs/ASTengine/core/ASTEngine.js"></script>
 <!-- AST-Engine:necessary js file -->
 
 <!-- customized js file -->
-<script type="text/javascript" src="./cokitjs/app/basicAPP/chatbox.js"></script>
+<script type="text/javascript" src="cokitjs/app/basicAPP/chatbox.js"></script>

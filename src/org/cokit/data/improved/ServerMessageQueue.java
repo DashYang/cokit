@@ -29,7 +29,7 @@ public class ServerMessageQueue<MessageType> implements MessageQueue<MessageType
 	private Object producerLock; 
 	
 	private static Logger logger = Logger.getLogger(ServerMessageQueue.class);
-	List<MessageType> messagequeue = new ArrayList<>();
+	List<MessageType> messagequeue = new ArrayList<MessageType>();
 	
 	public ServerMessageQueue() {
 		consumerIndex = 0;
@@ -74,7 +74,7 @@ public class ServerMessageQueue<MessageType> implements MessageQueue<MessageType
 	
 	@Override
 	public List<MessageType> consume() {
-		List<MessageType> records = new ArrayList<>();
+		List<MessageType> records = new ArrayList<MessageType>();
 		int size = messagequeue.size();
 		synchronized (consumerLock) {
 			for(int i = consumerIndex ; i < size; i ++) {
@@ -87,7 +87,7 @@ public class ServerMessageQueue<MessageType> implements MessageQueue<MessageType
 
 	@Override
 	public List<MessageType> recall() {
-		List<MessageType> records = new ArrayList<>();
+		List<MessageType> records = new ArrayList<MessageType>();
 		synchronized (consumerLock) {
 			for(int i = 0 ; i < consumerIndex; i ++) {
 				records.add(messagequeue.get(i));
@@ -114,7 +114,7 @@ public class ServerMessageQueue<MessageType> implements MessageQueue<MessageType
 	 */
 	@Override
 	public List<MessageType> getListFromIndex(int index) {
-		List<MessageType> records = new ArrayList<>();
+		List<MessageType> records = new ArrayList<MessageType>();
 		int size = messagequeue.size();
 		index -= offse;
 		if(index + 1< 0)

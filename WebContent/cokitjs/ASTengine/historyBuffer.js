@@ -2,11 +2,18 @@ function HistoryBuffer(owner) {
 	this.list = new Array(); // 
 	this.maxSRN = -1;
 	this.owner = owner;
-	this.tail = 0;
-	// push
 
+	//all messages less than this index are processed
+	this.executedIndex = 0;
+	this.size = 0;
+
+	//running status
+	this.isRunning = true;
+
+	// push
 	this.append = function(message) {
 		this.list.push(message);
+		this.size = this.list.length;
 	};
 	
 	this.acknowledge = function(message) {
@@ -21,7 +28,7 @@ function HistoryBuffer(owner) {
 	};
 	
 	/**
-	 * use these function to handle all messages(local message, acknowledge message, remote message) 
+	 * use this function to store all messages(local message, acknowledge message, remote message)
 	 */
 	this.push = function(message) {
 		if (message == null)
@@ -42,6 +49,21 @@ function HistoryBuffer(owner) {
 		// console.log(this.name + " push " + JSON.stringify(data));
 	};
 
+    /**
+	 * use this function to handle all messages that are waiting to be executed
+     * @returns {Array}
+     */
+	this.fetchWaitingToExecutedMessageList = function() {
+		var result = [];
+		//if buffer is not running, return empty
+        if(this.isRunning == false)
+            return result;
+		for(;this.executedIndex < this.size; this.executedIndex +=1) {
+			result.push(this.get(this.executedIndex));
+		}
+		return result;
+	};
+
 	this.get = function(index) {
 		if (index < this.list.length)
 			return this.list[index];
@@ -56,7 +78,3 @@ function HistoryBuffer(owner) {
 		return this.list.length;
 	};
 }
-
-
-
-
